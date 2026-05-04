@@ -16,7 +16,7 @@ class ConvBlock(nn.Sequential):
 
 
 class TinyKeywordCNN(nn.Module):
-    def __init__(self, num_classes: int = 10, dropout: float = 0.20) -> None:
+    def __init__(self, num_classes: int = 10, dropout: float = 0.30) -> None:
         super().__init__()
         self.features = nn.Sequential(
             ConvBlock(1, 16),
