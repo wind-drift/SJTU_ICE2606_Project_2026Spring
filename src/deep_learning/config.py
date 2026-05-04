@@ -23,7 +23,7 @@ class FeatureConfig:
     n_mels: int = 40
     n_mfcc: int = 13
     feature_kind: str = "mfcc"
-    include_delta: bool = True
+    include_delta: bool = False
     include_delta_delta: bool = True
     denoise: str = "none"
     spectral_subtract_strength: float = 1.0
