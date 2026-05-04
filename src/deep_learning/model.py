@@ -25,13 +25,13 @@ class TinyKeywordCNN(nn.Module):
             nn.MaxPool2d(kernel_size=2),
             ConvBlock(32, 64),
             nn.MaxPool2d(kernel_size=2),
-            ConvBlock(64, 96),
+            ConvBlock(64, 128),
             nn.AdaptiveAvgPool2d((1, 1)),
         )
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Dropout(dropout),
-            nn.Linear(96, num_classes),
+            nn.Linear(128, num_classes),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -41,4 +41,3 @@ class TinyKeywordCNN(nn.Module):
 
 def count_parameters(model: nn.Module) -> int:
     return sum(param.numel() for param in model.parameters() if param.requires_grad)
-
