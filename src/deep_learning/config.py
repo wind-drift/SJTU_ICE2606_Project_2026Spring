@@ -29,7 +29,7 @@ class FeatureConfig:
     spectral_subtract_strength: float = 1.0
     spectral_floor: float = 0.05
     fmin: float = 20.0
-    fmax: float = 7_600.0
+    fmax: float = 4000.0
 
     @classmethod
     def from_dict(cls, values: dict[str, Any] | None) -> "FeatureConfig":
