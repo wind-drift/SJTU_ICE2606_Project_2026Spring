@@ -37,7 +37,7 @@ class FeatureConfig:
 
 @dataclass(frozen=True)
 class TrainConfig:
-    batch_size: int = 16
+    batch_size: int= 8
     epochs: int = 200
     learning_rate: float = 1e-3
     weight_decay: float = 1e-4
