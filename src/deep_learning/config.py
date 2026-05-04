@@ -25,7 +25,7 @@ class FeatureConfig:
     feature_kind: str = "mfcc"
     include_delta: bool = False
     include_delta_delta: bool = True
-    denoise: str = "none"
+    denoise: str = 'notch_spectral'
     spectral_subtract_strength: float = 1.0
     spectral_floor: float = 0.05
     fmin: float = 20.0
