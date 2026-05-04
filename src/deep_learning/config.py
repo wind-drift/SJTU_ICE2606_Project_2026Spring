@@ -43,9 +43,10 @@ class TrainConfig:
     weight_decay: float = 1e-4
     patience: int = 30
     seed: int = 42
-    noise_prob: float = 0.15
+    noise_prob: float = 0.30
     gain_db: float = 6.0
     time_shift_ms: float = 120.0
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
