@@ -20,19 +20,19 @@ class TinyKeywordCNN(nn.Module):
     def __init__(self, num_classes: int = 10, dropout: float = 0.30) -> None:
         super().__init__()
         self.features = nn.Sequential(
-            ConvBlock(1, 16, kernel_size=3),
+            ConvBlock(1, 16, kernel_size=5),
             nn.MaxPool2d(kernel_size=2),
             ConvBlock(16, 32),
             nn.MaxPool2d(kernel_size=2),
             ConvBlock(32, 64),
             nn.MaxPool2d(kernel_size=2),
             ConvBlock(64, 128, dilation=1),
-            nn.AdaptiveAvgPool2d((2, 2)),
+            nn.AdaptiveAvgPool2d((1, 1)),
         )
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Dropout(dropout),
-            nn.Linear(512, num_classes),
+            nn.Linear(128, num_classes),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
