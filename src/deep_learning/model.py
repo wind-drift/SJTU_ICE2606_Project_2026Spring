@@ -1,4 +1,4 @@
-"""CNN classifier for log-Mel digit spectrograms."""
+"""CNN sequence classifier for log-Mel digit spectrograms."""
 
 from __future__ import annotations
 
@@ -20,23 +20,25 @@ class TinyKeywordCNN(nn.Module):
     def __init__(self, num_classes: int = 10, dropout: float = 0.30) -> None:
         super().__init__()
         self.features = nn.Sequential(
-            ConvBlock(1, 16, kernel_size=3),
+            ConvBlock(1, 16),
             nn.MaxPool2d(kernel_size=2),
             ConvBlock(16, 32),
             nn.MaxPool2d(kernel_size=2),
             ConvBlock(32, 64),
             nn.MaxPool2d(kernel_size=2),
-            ConvBlock(64, 128, dilation=1),
-            nn.AdaptiveAvgPool2d((2, 2)),
+            ConvBlock(64, 128),
         )
+        self.sequence = nn.GRU(input_size=128, hidden_size=128, batch_first=True, bidirectional=False)
         self.classifier = nn.Sequential(
-            nn.Flatten(),
             nn.Dropout(dropout),
-            nn.Linear(512, num_classes),
+            nn.Linear(128, num_classes),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.features(x)
+        x = x.mean(dim=2).transpose(1, 2)
+        x, _ = self.sequence(x)
+        x = x[:, -1, :]
         return self.classifier(x)
 
 
