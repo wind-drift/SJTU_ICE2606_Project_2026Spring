@@ -1,4 +1,4 @@
-"""Depthwise-separable CNN classifier for log-Mel digit spectrograms."""
+"""CNN classifier for log-Mel digit spectrograms."""
 
 from __future__ import annotations
 
@@ -16,35 +16,23 @@ class ConvBlock(nn.Sequential):
         )
 
 
-class DSConvBlock(nn.Sequential):
-    def __init__(self, in_channels: int, out_channels: int) -> None:
-        super().__init__(
-            nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1, groups=in_channels, bias=False),
-            nn.BatchNorm2d(in_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-        )
-
-
 class TinyKeywordCNN(nn.Module):
     def __init__(self, num_classes: int = 10, dropout: float = 0.30) -> None:
         super().__init__()
         self.features = nn.Sequential(
-            DSConvBlock(1, 16),
+            ConvBlock(1, 16, kernel_size=3),
             nn.MaxPool2d(kernel_size=2),
-            DSConvBlock(16, 32),
+            ConvBlock(16, 32),
             nn.MaxPool2d(kernel_size=2),
-            DSConvBlock(32, 64),
+            ConvBlock(32, 64),
             nn.MaxPool2d(kernel_size=2),
-            DSConvBlock(64, 192),
-            nn.AdaptiveAvgPool2d((1, 1)),
+            ConvBlock(64, 128, dilation=1),
+            nn.AdaptiveAvgPool2d((2, 2)),
         )
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Dropout(dropout),
-            nn.Linear(192, num_classes),
+            nn.Linear(512, num_classes),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
