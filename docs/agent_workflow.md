@@ -30,6 +30,13 @@ agent 只允许在本地自迭代。默认权限如下：
 - 不可以：自动 push、自动开 PR、自动 merge、自动改 GitHub issue/PR 状态。
 - 不可以：自动安装依赖、联网下载模型、删除用户文件、修改原始数据。
 
+运行环境和命令调用方式：
+
+- 所有 Python 门禁、训练、评估和参数量检查必须使用 Conda 环境 `nlp_env`。
+- agent 在 Codex 或其他自动化环境中必须直接调用 `D:\Anaconda\envs\nlp_env\python.exe`，不得把 `conda run -n nlp_env python ...` 作为固定调用方式。
+- 人工在本地终端复现实验时，可以先激活 `nlp_env` 后执行等价的 `python ...` 命令；agent 记录实验时必须记录实际使用的调用方式。
+- 如果 `D:\Anaconda\envs\nlp_env\python.exe` 不存在或无法运行，agent 必须停止并报告，不得自动创建环境、搜索替代解释器或安装依赖。
+
 GitHub 插件只用于只读查询仓库、PR 或 issue 状态，或准备人工审阅摘要。任何 GitHub 写操作必须由用户另行明确授权。
 
 ## 3. Current Branch And Workspace Gate
@@ -53,10 +60,10 @@ git status --short --branch
 
 启动前必须验证依赖可用。
 
-```bash
-python -B -c "import torch, numpy, scipy, matplotlib, librosa, soundfile; print('deps ok')"
-python -B -c "import src.deep_learning.train, src.deep_learning.evaluate, src.deep_learning.noise_eval; print('pipeline imports ok')"
-python -m src.deep_learning.train --help
+```powershell
+D:\Anaconda\envs\nlp_env\python.exe -B -c "import torch, numpy, scipy, matplotlib, librosa, soundfile; print('deps ok')"
+D:\Anaconda\envs\nlp_env\python.exe -B -c "import src.deep_learning.train, src.deep_learning.evaluate, src.deep_learning.noise_eval; print('pipeline imports ok')"
+D:\Anaconda\envs\nlp_env\python.exe -B -m src.deep_learning.train --help
 ```
 
 规则：
@@ -162,8 +169,8 @@ git rev-parse HEAD
 
 4. 检查参数量。
 
-```bash
-python -B -c "from src.deep_learning.model import TinyKeywordCNN, count_parameters; print(count_parameters(TinyKeywordCNN()))"
+```powershell
+D:\Anaconda\envs\nlp_env\python.exe -B -c "from src.deep_learning.model import TinyKeywordCNN, count_parameters; print(count_parameters(TinyKeywordCNN()))"
 ```
 
 如果参数量超过 150,000，停止并 discard。
@@ -177,10 +184,10 @@ git commit -m "agent-exp: <run_id> <idea>"
 
 6. 运行固定训练和评估。
 
-```bash
-python -m src.deep_learning.train --output-dir outputs/agent_research/runs/<run_id> --checkpoint outputs/agent_research/runs/<run_id>/tiny_cnn.pt --epochs 120 --patience 20 --seed <seed>
-python -m src.deep_learning.evaluate --checkpoint outputs/agent_research/runs/<run_id>/tiny_cnn.pt --output-dir outputs/agent_research/runs/<run_id>
-python -m src.deep_learning.noise_eval --checkpoint outputs/agent_research/runs/<run_id>/tiny_cnn.pt --output-dir outputs/agent_research/runs/<run_id> --noise-kinds mixed --snr -10 -5 0 5 10 15 20
+```powershell
+D:\Anaconda\envs\nlp_env\python.exe -B -m src.deep_learning.train --output-dir outputs/agent_research/runs/<run_id> --checkpoint outputs/agent_research/runs/<run_id>/tiny_cnn.pt --epochs 120 --patience 20 --seed <seed>
+D:\Anaconda\envs\nlp_env\python.exe -B -m src.deep_learning.evaluate --checkpoint outputs/agent_research/runs/<run_id>/tiny_cnn.pt --output-dir outputs/agent_research/runs/<run_id>
+D:\Anaconda\envs\nlp_env\python.exe -B -m src.deep_learning.noise_eval --checkpoint outputs/agent_research/runs/<run_id>/tiny_cnn.pt --output-dir outputs/agent_research/runs/<run_id> --noise-kinds mixed --snr -10 -5 0 5 10 15 20
 ```
 
 7. 计算分数并记录结果。

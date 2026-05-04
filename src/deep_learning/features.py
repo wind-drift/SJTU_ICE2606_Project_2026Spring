@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import tempfile
 from pathlib import Path
 from typing import Iterable
 
@@ -28,6 +29,40 @@ def load_audio(path: str | Path, target_sr: int = 16_000) -> tuple[np.ndarray, i
     path = Path(path)
     errors: list[str] = []
 
+    if path.suffix.lower() == ".mp3":
+        trimmed_bytes, trim_note = trim_mp3_trailing_junk(path)
+        if trimmed_bytes is not None:
+            decoded = _decode_temp_audio(trimmed_bytes, ".mp3", target_sr, errors)
+            if decoded is not None:
+                return decoded
+            if trim_note:
+                errors.append(f"mp3_frame_trim: {trim_note}")
+
+    decoded = _decode_audio_file(path, target_sr, errors)
+    if decoded is not None:
+        return decoded
+
+    if path.suffix.lower() == ".mp3":
+        trimmed_bytes, trim_note = trim_mp3_trailing_junk(path)
+        if trimmed_bytes is not None:
+            decoded = _decode_temp_audio(trimmed_bytes, ".mp3", target_sr, errors)
+            if decoded is not None:
+                return decoded
+        if trim_note:
+            errors.append(f"mp3_frame_trim: {trim_note}")
+
+    message = "\n  - ".join(errors)
+    raise RuntimeError(
+        f"Could not decode audio file {path}. Install requirements.txt and make "
+        f"sure MP3 decoding is available.\n  - {message}"
+    )
+
+
+def _decode_audio_file(
+    path: Path,
+    target_sr: int,
+    errors: list[str],
+) -> tuple[np.ndarray, int] | None:
     try:
         import librosa  # type: ignore
 
@@ -59,11 +94,134 @@ def load_audio(path: str | Path, target_sr: int = 16_000) -> tuple[np.ndarray, i
         except Exception as exc:
             errors.append(f"scipy.wavfile: {exc}")
 
-    message = "\n  - ".join(errors)
-    raise RuntimeError(
-        f"Could not decode audio file {path}. Install requirements.txt and make "
-        f"sure MP3 decoding is available.\n  - {message}"
-    )
+    return None
+
+
+def _decode_temp_audio(
+    data: bytes,
+    suffix: str,
+    target_sr: int,
+    errors: list[str],
+) -> tuple[np.ndarray, int] | None:
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as handle:
+        handle.write(data)
+        temp_path = Path(handle.name)
+    try:
+        return _decode_audio_file(temp_path, target_sr, errors)
+    finally:
+        temp_path.unlink(missing_ok=True)
+
+
+_BITRATES_KBPS = {
+    (3, 3): (None, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, None),
+    (3, 2): (None, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, None),
+    (3, 1): (None, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, None),
+    (2, 3): (None, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256, None),
+    (2, 2): (None, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, None),
+    (2, 1): (None, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, None),
+    (0, 3): (None, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256, None),
+    (0, 2): (None, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, None),
+    (0, 1): (None, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, None),
+}
+
+_SAMPLE_RATES = {
+    3: (44_100, 48_000, 32_000),
+    2: (22_050, 24_000, 16_000),
+    0: (11_025, 12_000, 8_000),
+}
+
+
+def trim_mp3_trailing_junk(path: str | Path) -> tuple[bytes | None, str | None]:
+    """Return MP3 bytes truncated after the last valid frame.
+
+    Some course-provided MP3 files contain non-audio marker bytes near the end.
+    Strict decoders may fail during final resync even though the audio frames are
+    usable. This helper preserves the original file on disk and only supplies a
+    temporary trimmed copy to the decoder.
+    """
+
+    data = Path(path).read_bytes()
+    frame_start = _mp3_audio_start(data)
+    if frame_start is None:
+        return None, "no MPEG audio frame header found"
+
+    offset = frame_start
+    frame_count = 0
+    while offset + 4 <= len(data):
+        frame_length = _mp3_frame_length(data, offset)
+        if frame_length is None:
+            break
+        next_offset = offset + frame_length
+        if next_offset > len(data):
+            break
+        offset = next_offset
+        frame_count += 1
+
+    if frame_count == 0:
+        return None, "no complete MPEG audio frames found"
+    if offset >= len(data):
+        return None, None
+
+    trailing = len(data) - offset
+    if trailing < 16:
+        return None, None
+    return data[:offset], f"trimmed {trailing} trailing bytes after {frame_count} MPEG frames"
+
+
+def _mp3_audio_start(data: bytes) -> int | None:
+    if data.startswith(b"ID3") and len(data) >= 10:
+        tag_size = (
+            ((data[6] & 0x7F) << 21)
+            | ((data[7] & 0x7F) << 14)
+            | ((data[8] & 0x7F) << 7)
+            | (data[9] & 0x7F)
+        )
+        start = 10 + tag_size
+        if start + 4 <= len(data) and _mp3_frame_length(data, start) is not None:
+            return start
+
+    for offset in range(0, max(0, len(data) - 4)):
+        first = _mp3_frame_length(data, offset)
+        if first is None:
+            continue
+        second_offset = offset + first
+        if second_offset + 4 > len(data):
+            return offset
+        if _mp3_frame_length(data, second_offset) is not None:
+            return offset
+    return None
+
+
+def _mp3_frame_length(data: bytes, offset: int) -> int | None:
+    if offset + 4 > len(data):
+        return None
+    header = int.from_bytes(data[offset : offset + 4], "big")
+    if (header >> 21) & 0x7FF != 0x7FF:
+        return None
+
+    version_id = (header >> 19) & 0x3
+    layer_id = (header >> 17) & 0x3
+    bitrate_index = (header >> 12) & 0xF
+    sample_rate_index = (header >> 10) & 0x3
+    padding = (header >> 9) & 0x1
+
+    if version_id == 1 or layer_id == 0 or sample_rate_index == 3:
+        return None
+    bitrate = _BITRATES_KBPS.get((version_id, layer_id), (None,) * 16)[bitrate_index]
+    if bitrate is None:
+        return None
+    sample_rate = _SAMPLE_RATES[version_id][sample_rate_index]
+
+    if layer_id == 3:
+        frame_length = int((12_000 * bitrate / sample_rate + padding) * 4)
+    elif layer_id == 2:
+        frame_length = int(144_000 * bitrate / sample_rate + padding)
+    else:
+        coefficient = 144_000 if version_id == 3 else 72_000
+        frame_length = int(coefficient * bitrate / sample_rate + padding)
+    if frame_length <= 4:
+        return None
+    return frame_length
 
 
 def _mono_float32(audio: np.ndarray) -> np.ndarray:
@@ -275,4 +433,3 @@ def resolve_speaker_files(reference_dir: str | Path, speaker_ids: Iterable[int])
             raise FileNotFoundError(f"Missing audio file for speaker{speaker_id} in {reference_dir}")
         result[speaker_id] = matches[0]
     return result
-
