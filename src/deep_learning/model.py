@@ -15,6 +15,17 @@ class ConvBlock(nn.Sequential):
         )
 
 
+class AttentiveTemporalPool(nn.Module):
+    def __init__(self, channels: int) -> None:
+        super().__init__()
+        self.score = nn.Conv1d(channels, 1, kernel_size=1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.mean(dim=2)
+        weights = torch.softmax(self.score(x), dim=-1)
+        return (x * weights).sum(dim=-1)
+
+
 class TinyKeywordCNN(nn.Module):
     def __init__(self, num_classes: int = 10, dropout: float = 0.30) -> None:
         super().__init__()
@@ -26,16 +37,16 @@ class TinyKeywordCNN(nn.Module):
             ConvBlock(32, 64),
             nn.MaxPool2d(kernel_size=2),
             ConvBlock(64, 128),
-            nn.AdaptiveAvgPool2d((1, 1)),
         )
+        self.pool = AttentiveTemporalPool(128)
         self.classifier = nn.Sequential(
-            nn.Flatten(),
             nn.Dropout(dropout),
             nn.Linear(128, num_classes),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.features(x)
+        x = self.pool(x)
         return self.classifier(x)
 
 
