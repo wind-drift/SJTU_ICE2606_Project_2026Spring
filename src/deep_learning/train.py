@@ -139,7 +139,7 @@ def main() -> None:
 
     device = resolve_device(args.device)
     model = TinyKeywordCNN(num_classes=10).to(device)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.05)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
     history: list[dict[str, float | int]] = []
