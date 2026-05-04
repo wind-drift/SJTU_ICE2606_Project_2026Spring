@@ -15,7 +15,7 @@ SNR_LEVELS = (-10, -5, 0, 5, 10, 15, 20)
 @dataclass(frozen=True)
 class FeatureConfig:
     sr: int = 16_000
-    max_seconds: float = 1.8
+    max_seconds: float = 1.5
     preemphasis: float = 0.97
     n_fft: int = 512
     win_length: int = 400
