@@ -20,7 +20,7 @@ class FeatureConfig:
     n_fft: int = 512
     win_length: int = 400
     hop_length: int = 160
-    n_mels: int = 80
+    n_mels: int = 64
     fmin: float = 20.0
     fmax: float = 7_600.0
 
