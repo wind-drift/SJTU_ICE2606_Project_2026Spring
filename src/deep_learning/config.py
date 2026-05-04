@@ -19,7 +19,7 @@ class FeatureConfig:
     preemphasis: float = 0.97
     n_fft: int = 512
     win_length: int = 400
-    hop_length: int = 160
+    hop_length: int = 240
     n_mels: int = 40
     n_mfcc: int = 13
     feature_kind: str = "mfcc"
