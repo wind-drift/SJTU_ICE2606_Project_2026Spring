@@ -1,0 +1,47 @@
+{
+  "source": {
+    "source_path": "data/raw/speaker1.mp3",
+    "speaker_id": 1,
+    "label": 0,
+    "start_sample": 5120,
+    "end_sample": 14320,
+    "sr": 16000,
+    "start_sec": 0.32,
+    "end_sec": 0.895,
+    "duration_sec": 0.575
+  },
+  "signal_processing": {
+    "sample_rate_hz": 16000,
+    "preemphasis": 0.97,
+    "frame_length_samples": 400,
+    "hop_length_samples": 160,
+    "n_fft": 512,
+    "n_mels": 40,
+    "n_mfcc": 13,
+    "feature_kind": "mfcc",
+    "include_delta": true,
+    "include_delta_delta": true,
+    "denoise": "none"
+  },
+  "measurements": {
+    "duration_sec": 0.575,
+    "peak": 1.0,
+    "rms": 0.2000559400439959,
+    "dominant_fft_frequency_hz": 372.1739130434782,
+    "log_mel_shape": [
+      40,
+      151
+    ],
+    "mfcc_shape": [
+      39,
+      151
+    ]
+  },
+  "figures": {
+    "time_waveform": "time_waveform.png",
+    "fft_magnitude": "fft_magnitude.png",
+    "stft_spectrogram": "stft_spectrogram.png",
+    "log_mel_features": "log_mel_features.png",
+    "mfcc_features": "mfcc_features.png"
+  }
+}
