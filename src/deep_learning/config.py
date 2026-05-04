@@ -21,7 +21,7 @@ class FeatureConfig:
     win_length: int = 400
     hop_length: int = 160
     n_mels: int = 40
-    n_mfcc: int = 10
+    n_mfcc: int = 13
     feature_kind: str = "mfcc"
     include_delta: bool = True
     include_delta_delta: bool = True
