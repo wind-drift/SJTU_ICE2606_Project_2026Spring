@@ -1,4 +1,4 @@
-"""CNN classifier for log-Mel digit spectrograms."""
+"""Tiny CNN classifier for log-Mel digit spectrograms."""
 
 from __future__ import annotations
 
@@ -7,10 +7,9 @@ from torch import nn
 
 
 class ConvBlock(nn.Sequential):
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3, dilation: int = 1) -> None:
-        padding = dilation * (kernel_size // 2)
+    def __init__(self, in_channels: int, out_channels: int) -> None:
         super().__init__(
-            nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=padding, dilation=dilation, bias=False),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
         )
@@ -20,19 +19,19 @@ class TinyKeywordCNN(nn.Module):
     def __init__(self, num_classes: int = 10, dropout: float = 0.30) -> None:
         super().__init__()
         self.features = nn.Sequential(
-            ConvBlock(1, 48, kernel_size=3),
+            ConvBlock(1, 16),
             nn.MaxPool2d(kernel_size=2),
-            ConvBlock(48, 96),
+            ConvBlock(16, 32),
             nn.MaxPool2d(kernel_size=2),
-            ConvBlock(96, 192),
+            ConvBlock(32, 64),
             nn.MaxPool2d(kernel_size=2),
-            ConvBlock(192, 384, dilation=1),
+            ConvBlock(64, 128),
             nn.AdaptiveAvgPool2d((1, 1)),
         )
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Dropout(dropout),
-            nn.Linear(384, num_classes),
+            nn.Linear(128, num_classes),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
