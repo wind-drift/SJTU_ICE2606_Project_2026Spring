@@ -12,9 +12,9 @@ from torch.utils.data import Dataset
 from .config import FeatureConfig, TRAIN_SPEAKERS, VAL_SPEAKERS
 from .features import (
     add_noise_at_snr,
+    extract_features,
     generate_noise,
     load_audio,
-    log_mel_spectrogram,
     normalize_audio,
 )
 from .segment import DigitSample, load_digit_samples
@@ -71,7 +71,7 @@ class DigitSpeechDataset(Dataset):
         elif self.training:
             audio = self._augment(audio)
 
-        features = log_mel_spectrogram(audio, self.feature_config)
+        features = extract_features(audio, self.feature_config)
         label = np.int64(sample.label)
         return torch.from_numpy(features), torch.tensor(label, dtype=torch.long)
 

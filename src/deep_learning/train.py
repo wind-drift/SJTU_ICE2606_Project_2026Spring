@@ -83,7 +83,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--gain-db", type=float, default=TrainConfig.gain_db)
     parser.add_argument("--time-shift-ms", type=float, default=TrainConfig.time_shift_ms)
     parser.add_argument("--max-seconds", type=float, default=FeatureConfig.max_seconds)
+    parser.add_argument("--feature-kind", choices=["mfcc", "log_mel"], default=FeatureConfig.feature_kind)
+    parser.add_argument("--denoise", choices=["none", "notch", "spectral", "notch_spectral"], default=FeatureConfig.denoise)
     parser.add_argument("--n-mels", type=int, default=FeatureConfig.n_mels)
+    parser.add_argument("--n-mfcc", type=int, default=FeatureConfig.n_mfcc)
+    parser.add_argument("--no-delta", action="store_true")
+    parser.add_argument("--no-delta-delta", action="store_true")
+    parser.add_argument("--spectral-subtract-strength", type=float, default=FeatureConfig.spectral_subtract_strength)
     return parser.parse_args()
 
 
@@ -95,7 +101,16 @@ def main() -> None:
     checkpoint_path = Path(args.checkpoint)
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
-    feature_config = FeatureConfig(max_seconds=args.max_seconds, n_mels=args.n_mels)
+    feature_config = FeatureConfig(
+        max_seconds=args.max_seconds,
+        feature_kind=args.feature_kind,
+        denoise=args.denoise,
+        n_mels=args.n_mels,
+        n_mfcc=args.n_mfcc,
+        include_delta=not args.no_delta,
+        include_delta_delta=not args.no_delta and not args.no_delta_delta,
+        spectral_subtract_strength=args.spectral_subtract_strength,
+    )
     train_config = TrainConfig(
         batch_size=args.batch_size,
         epochs=args.epochs,

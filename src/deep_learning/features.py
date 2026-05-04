@@ -9,6 +9,7 @@ from typing import Iterable
 
 import numpy as np
 import torch
+from scipy.fft import dct
 from scipy import signal
 from scipy.io import wavfile
 
@@ -280,6 +281,91 @@ def pre_emphasis(audio: np.ndarray, coeff: float = 0.97) -> np.ndarray:
     return out
 
 
+def notch_filter(audio: np.ndarray, sr: int, freq_hz: float = 50.0, quality: float = 30.0) -> np.ndarray:
+    """Suppress narrow-band 50 Hz power-line interference."""
+
+    audio = np.asarray(audio, dtype=np.float32)
+    if len(audio) < 8:
+        return audio
+    b, a = signal.iirnotch(w0=freq_hz, Q=quality, fs=sr)
+    try:
+        filtered = signal.filtfilt(b, a, audio)
+    except ValueError:
+        filtered = signal.lfilter(b, a, audio)
+    return filtered.astype(np.float32)
+
+
+def spectral_subtract(audio: np.ndarray, config: FeatureConfig) -> np.ndarray:
+    """Classic STFT magnitude spectral subtraction.
+
+    The noise profile is estimated from the lowest-energy frames. This keeps the
+    method self-contained for the course data, where no separate noise-only
+    segment is annotated for every utterance.
+    """
+
+    audio = np.asarray(audio, dtype=np.float32)
+    if len(audio) < config.win_length:
+        return audio
+
+    noverlap = max(0, config.win_length - config.hop_length)
+    _, _, spectrum = signal.stft(
+        audio,
+        fs=config.sr,
+        window="hann",
+        nperseg=config.win_length,
+        noverlap=noverlap,
+        nfft=config.n_fft,
+        boundary="zeros",
+        padded=True,
+    )
+    if spectrum.size == 0:
+        return audio
+
+    magnitude = np.abs(spectrum)
+    phase = np.exp(1j * np.angle(spectrum))
+    frame_energy = np.mean(magnitude * magnitude, axis=0)
+    noise_frames = max(1, int(round(0.2 * magnitude.shape[1])))
+    quiet_indices = np.argsort(frame_energy)[:noise_frames]
+    noise_mag = np.median(magnitude[:, quiet_indices], axis=1, keepdims=True)
+    clean_mag = magnitude - float(config.spectral_subtract_strength) * noise_mag
+    clean_mag = np.maximum(clean_mag, float(config.spectral_floor) * magnitude)
+    _, reconstructed = signal.istft(
+        clean_mag * phase,
+        fs=config.sr,
+        window="hann",
+        nperseg=config.win_length,
+        noverlap=noverlap,
+        nfft=config.n_fft,
+        input_onesided=True,
+    )
+    if len(reconstructed) < len(audio):
+        reconstructed = np.pad(reconstructed, (0, len(audio) - len(reconstructed)))
+    return reconstructed[: len(audio)].astype(np.float32)
+
+
+def apply_denoise(audio: np.ndarray, config: FeatureConfig) -> np.ndarray:
+    mode = config.denoise.lower()
+    if mode == "none":
+        return np.asarray(audio, dtype=np.float32)
+    if mode in {"notch", "notch_spectral"}:
+        audio = notch_filter(audio, sr=config.sr)
+    if mode in {"spectral", "notch_spectral"}:
+        audio = spectral_subtract(audio, config)
+    if mode not in {"none", "notch", "spectral", "notch_spectral"}:
+        raise ValueError(f"Unknown denoise mode: {config.denoise}")
+    return normalize_audio(audio)
+
+
+def prepare_waveform(audio: np.ndarray, config: FeatureConfig) -> np.ndarray:
+    """Apply the signal-processing frontend before feature extraction."""
+
+    target_len = int(round(config.sr * config.max_seconds))
+    audio = pad_or_truncate(normalize_audio(audio), target_len)
+    audio = apply_denoise(audio, config)
+    audio = pre_emphasis(audio, config.preemphasis)
+    return audio.astype(np.float32, copy=False)
+
+
 def hz_to_mel(freq_hz: np.ndarray | float) -> np.ndarray | float:
     return 2595.0 * np.log10(1.0 + np.asarray(freq_hz) / 700.0)
 
@@ -320,13 +406,10 @@ def mel_filter_bank(
     return filters
 
 
-def log_mel_spectrogram(audio: np.ndarray, config: FeatureConfig) -> np.ndarray:
-    """Convert one utterance to a normalized 1 x n_mels x frames tensor."""
+def power_spectrogram(audio: np.ndarray, config: FeatureConfig) -> np.ndarray:
+    """Return an STFT power spectrogram after frontend conditioning."""
 
-    target_len = int(round(config.sr * config.max_seconds))
-    audio = pad_or_truncate(normalize_audio(audio), target_len)
-    audio = pre_emphasis(audio, config.preemphasis)
-
+    audio = prepare_waveform(audio, config)
     waveform = torch.from_numpy(audio.astype(np.float32))
     window = torch.hann_window(config.win_length)
     spec = torch.stft(
@@ -338,14 +421,69 @@ def log_mel_spectrogram(audio: np.ndarray, config: FeatureConfig) -> np.ndarray:
         center=True,
         return_complex=True,
     )
-    power = spec.abs().pow(2)
+    return spec.abs().pow(2).numpy().astype(np.float32)
+
+
+def log_mel_matrix(audio: np.ndarray, config: FeatureConfig) -> np.ndarray:
+    power = torch.from_numpy(power_spectrogram(audio, config))
     filters = torch.from_numpy(
         mel_filter_bank(config.sr, config.n_fft, config.n_mels, config.fmin, config.fmax)
     )
     mel = torch.matmul(filters, power).clamp_min(EPS)
-    log_mel = torch.log(mel)
-    log_mel = (log_mel - log_mel.mean()) / (log_mel.std(unbiased=False) + 1e-5)
-    return log_mel.unsqueeze(0).numpy().astype(np.float32)
+    return torch.log(mel).numpy().astype(np.float32)
+
+
+def standardize_feature_matrix(features: np.ndarray) -> np.ndarray:
+    features = np.asarray(features, dtype=np.float32)
+    return ((features - features.mean()) / (features.std() + 1e-5)).astype(np.float32)
+
+
+def log_mel_spectrogram(audio: np.ndarray, config: FeatureConfig) -> np.ndarray:
+    """Convert one utterance to a normalized 1 x n_mels x frames tensor."""
+
+    log_mel = standardize_feature_matrix(log_mel_matrix(audio, config))
+    return log_mel[np.newaxis, :, :].astype(np.float32)
+
+
+def delta_features(features: np.ndarray, radius: int = 2) -> np.ndarray:
+    features = np.asarray(features, dtype=np.float32)
+    if features.shape[1] == 0 or radius <= 0:
+        return np.zeros_like(features)
+    padded = np.pad(features, ((0, 0), (radius, radius)), mode="edge")
+    denom = 2.0 * sum(offset * offset for offset in range(1, radius + 1))
+    delta = np.zeros_like(features)
+    for offset in range(1, radius + 1):
+        delta += offset * (
+            padded[:, radius + offset : radius + offset + features.shape[1]]
+            - padded[:, radius - offset : radius - offset + features.shape[1]]
+        )
+    return (delta / denom).astype(np.float32)
+
+
+def mfcc_spectrogram(audio: np.ndarray, config: FeatureConfig) -> np.ndarray:
+    """Extract MFCC, delta, and delta-delta features as a CNN input map."""
+
+    log_mel = log_mel_matrix(audio, config)
+    cepstra = dct(log_mel, type=2, axis=0, norm="ortho")[: config.n_mfcc]
+    parts = [cepstra.astype(np.float32)]
+    if config.include_delta:
+        delta = delta_features(cepstra)
+        parts.append(delta)
+        if config.include_delta_delta:
+            parts.append(delta_features(delta))
+    elif config.include_delta_delta:
+        parts.append(delta_features(delta_features(cepstra)))
+    features = standardize_feature_matrix(np.concatenate(parts, axis=0))
+    return features[np.newaxis, :, :].astype(np.float32)
+
+
+def extract_features(audio: np.ndarray, config: FeatureConfig) -> np.ndarray:
+    kind = config.feature_kind.lower()
+    if kind == "log_mel":
+        return log_mel_spectrogram(audio, config)
+    if kind == "mfcc":
+        return mfcc_spectrogram(audio, config)
+    raise ValueError(f"Unknown feature kind: {config.feature_kind}")
 
 
 def rms(audio: np.ndarray) -> float:

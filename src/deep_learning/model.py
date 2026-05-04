@@ -1,4 +1,4 @@
-"""CNN classifier for log-Mel digit spectrograms."""
+"""CNN classifier for time-frequency digit features."""
 
 from __future__ import annotations
 
