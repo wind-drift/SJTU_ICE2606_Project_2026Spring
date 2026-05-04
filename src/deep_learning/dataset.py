@@ -133,7 +133,7 @@ def build_train_val_datasets(
         seed=seed,
         noise_path=noise_path,
         noise_prob=noise_prob,
-        noise_snr_range=(0.0, 20.0),
+        noise_snr_range=(-5.0, 20.0),
         gain_db=gain_db,
         time_shift_ms=time_shift_ms,
     )
