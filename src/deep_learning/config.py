@@ -28,7 +28,7 @@ class FeatureConfig:
     denoise: str = "none"
     spectral_subtract_strength: float = 1.0
     spectral_floor: float = 0.05
-    fmin: float = 20.0
+    fmin: float = 80.0
     fmax: float = 7_600.0
 
     @classmethod
