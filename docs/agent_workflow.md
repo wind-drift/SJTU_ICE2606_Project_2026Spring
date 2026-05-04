@@ -6,7 +6,7 @@
 
 ## 1. Goal
 
-agent 的目标是在当前本地分支内迭代改进 `src/deep_learning/` 的 Tiny CNN 语音数字识别方案。
+agent 的目标是在当前本地分支内迭代改进 `src/deep_learning/` 的本地从零训练语音数字识别方案。当前实现可以从 Tiny CNN 出发，但模型架构不是固定边界；只要遵守数据、评估、依赖、可改文件和显存预算规则，agent 可以尝试更有表达力的结构。
 
 固定任务：
 
@@ -18,7 +18,7 @@ agent 的目标是在当前本地分支内迭代改进 `src/deep_learning/` 的 
 
 非目标：
 
-- 不追求使用 Whisper、AST、BC-ResNet 等大模型替代当前主线。
+- 不使用 Whisper、AST、BC-ResNet 等预训练模型或联网下载权重替代当前主线；可以借鉴论文或开源实现中的结构思想，并在本项目中从零实现和训练。
 - 不改传统方法和机器学习同学的代码。
 - 不自动生成最终报告、slide 或合并 PR。
 
@@ -114,7 +114,7 @@ git diff --name-only <base_commit> HEAD
 
 输出必须全部属于允许文件列表。否则该轮实验判定为越界，必须 discard。
 
-## 6. Experiment Budget
+## 6. Experiment Budget And Research Quality
 
 每一轮实验必须小而可解释。
 
@@ -122,13 +122,21 @@ git diff --name-only <base_commit> HEAD
 
 - 每轮最多修改 3 个文件。
 - 单轮 diff 建议不超过 200 行。
-- 模型参数量不得超过 150,000。
+- 不再设置固定参数量上限；模型必须能在本机 RTX 4060 显存预算内完成固定训练命令，且不得因 CUDA OOM、显存碎片化或长期占满显存导致训练失败。
 - 每轮优先只改变一个研究因素。
 - 每轮最多训练一次主模型，除非该轮明确是随机种子稳定性检查。
 
+研究质量要求：
+
+- 每轮正式改动前必须先阅读已有的 `outputs/agent_research/results.tsv`、`outputs/agent_research/strategy_state.md`，以及当前最佳 run 的 `train_summary.json`、`training_history.csv`、`clean_metrics.json` 和 `noise_accuracy.csv`；如果这些文件还不存在，必须记录为首轮冷启动状态。
+- 每轮正式改动前必须留出独立思考阶段，建议至少 10 分钟；自动化环境中应通过写出不少于 3 个候选假设、比较收益/风险、再选择 1 个执行来替代不可观测的“思考时间”。
+- 每轮应广泛搜索可能有效的方法：优先查阅本仓库代码和文档，再查阅课程允许范围内的论文、官方文档或可靠技术资料。搜索只能用于产生从零训练的架构、特征、增强或优化器想法，不得下载预训练权重、自动安装依赖或改变评估标准。
+- 每轮必须记录为什么选择当前假设，以及为什么暂时不选其他候选假设。
+- 每轮结束后必须把失败和有效经验写回 `strategy_state.md`，供后续轮次学习，避免重复尝试已失败的简单变体。
+
 允许研究因素：
 
-- CNN 通道数、卷积层数、dropout、池化方式。
+- 模型架构，例如 CNN 通道数、卷积层数、残差连接、depthwise separable convolution、dilated convolution、normalization、attention、pooling、classifier head、轻量序列建模模块。
 - log-Mel 参数，例如 `n_mels`、`max_seconds`、window/hop。
 - augmentation 参数，例如随机增益、时间平移、训练噪声概率。
 - optimizer 超参数，例如 learning rate、weight decay、patience。
@@ -153,7 +161,17 @@ git rev-parse HEAD
 
 记为 `base_commit`。
 
-2. 写出实验假设。
+2. 写出研究计划。
+
+研究计划必须包含：
+
+- 上一轮和当前最佳结果的简短解读。
+- 至少 3 个候选假设。
+- 本轮选择的假设及选择理由。
+- 暂不选择其他候选假设的理由。
+- 如果使用了外部搜索，记录 2 到 5 条来源或关键词，以及它们启发的具体做法。
+
+3. 写出实验假设。
 
 假设必须包含：
 
@@ -163,26 +181,53 @@ git rev-parse HEAD
 - 风险
 - 回滚标准
 
-3. 修改允许文件。
+4. 修改允许文件。
 
 修改必须与假设一致，不能顺手重构无关代码。
 
-4. 检查参数量。
+5. 检查参数量和显存预算。
 
 ```powershell
-D:\Anaconda\envs\nlp_env\python.exe -B -c "from src.deep_learning.model import TinyKeywordCNN, count_parameters; print(count_parameters(TinyKeywordCNN()))"
+@'
+import numpy as np
+import torch
+
+from src.deep_learning.config import FeatureConfig, TrainConfig
+from src.deep_learning.features import log_mel_spectrogram
+from src.deep_learning.model import TinyKeywordCNN, count_parameters
+
+cfg = FeatureConfig()
+sample = log_mel_spectrogram(np.zeros(int(cfg.sr * cfg.max_seconds), dtype=np.float32), cfg)
+model = TinyKeywordCNN()
+print("params", count_parameters(model))
+
+if not torch.cuda.is_available():
+    print("cuda unavailable")
+else:
+    device = torch.device("cuda")
+    model.to(device)
+    x = torch.zeros((TrainConfig.batch_size, *sample.shape), device=device)
+    y = torch.zeros(TrainConfig.batch_size, dtype=torch.long, device=device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=TrainConfig.learning_rate)
+    loss = torch.nn.CrossEntropyLoss()(model(x), y)
+    loss.backward()
+    optimizer.step()
+    total_gb = torch.cuda.get_device_properties(0).total_memory / 1024**3
+    peak_gb = torch.cuda.max_memory_allocated() / 1024**3
+    print("cuda_peak_gb", round(peak_gb, 3), "cuda_total_gb", round(total_gb, 3))
+'@ | D:\Anaconda\envs\nlp_env\python.exe -B -
 ```
 
-如果参数量超过 150,000，停止并 discard。
+如果该检查 OOM、训练命令 OOM、或者显存峰值接近本机 RTX 4060 可用显存导致训练不可靠，停止并 discard。参数量仍需记录到结果日志，但不再作为固定 discard 阈值。
 
-5. 本地 commit。
+6. 本地 commit。
 
 ```bash
 git add <allowed_files>
 git commit -m "agent-exp: <run_id> <idea>"
 ```
 
-6. 运行固定训练和评估。
+7. 运行固定训练和评估。
 
 ```powershell
 D:\Anaconda\envs\nlp_env\python.exe -B -m src.deep_learning.train --output-dir outputs/agent_research/runs/<run_id> --checkpoint outputs/agent_research/runs/<run_id>/tiny_cnn.pt --epochs 120 --patience 20 --seed <seed>
@@ -190,7 +235,7 @@ D:\Anaconda\envs\nlp_env\python.exe -B -m src.deep_learning.evaluate --checkpoin
 D:\Anaconda\envs\nlp_env\python.exe -B -m src.deep_learning.noise_eval --checkpoint outputs/agent_research/runs/<run_id>/tiny_cnn.pt --output-dir outputs/agent_research/runs/<run_id> --noise-kinds mixed --snr -10 -5 0 5 10 15 20
 ```
 
-7. 计算分数并记录结果。
+8. 计算分数并记录结果。
 
 结果写入未跟踪文件：
 
@@ -198,7 +243,15 @@ D:\Anaconda\envs\nlp_env\python.exe -B -m src.deep_learning.noise_eval --checkpo
 outputs/agent_research/results.tsv
 ```
 
-8. 决定保留或丢弃。
+同时在对应 run 目录写入：
+
+```text
+outputs/agent_research/runs/<run_id>/round_log.md
+```
+
+`round_log.md` 至少包含：研究计划、实验假设、实际改动摘要、完整命令、参数量、显存检查结果、训练/评估结果、保留判定、给下一轮的经验。
+
+9. 决定保留或丢弃。
 
 - 通过保留规则：保留 commit。
 - 未通过保留规则：优先用 `git revert <experiment_commit>` 撤销本轮实验；不得默认 `reset --hard`。如果需要 reset，必须先向人工说明目标 commit 和影响范围。
@@ -221,7 +274,7 @@ score = 0.5 * clean_accuracy + 0.5 * mean_mixed_noise_accuracy
 
 - 新 `score` 比当前最佳高至少 `0.02`，且 clean accuracy 没有下降超过 `0.05`，才自动保留。
 - 如果 `score` 持平，只有在参数更少、代码更简单或低 SNR 表现更稳定时才保留。
-- 如果训练失败、评估失败、输出缺失、参数量越界或修改文件越界，一律 discard。
+- 如果训练失败、评估失败、输出缺失、显存预算不满足或修改文件越界，一律 discard。
 
 当前最佳分数必须来自同一评估命令和同一数据划分，不能混用不同设置。
 
@@ -250,6 +303,7 @@ run_id	commit	base_commit	seed	status	score	clean_accuracy	mean_mixed_noise_accu
 - `clean_confusion_matrix.png`
 - `noise_accuracy.csv`
 - `accuracy_snr_curve.png`
+- `round_log.md`
 
 ## 10. Self-Update Policy
 
@@ -266,6 +320,8 @@ outputs/agent_research/strategy_state.md
 - 有效假设。
 - 下一轮候选实验。
 - 对数据或分段质量的观察。
+- 已搜索的方法、来源、关键词和与本项目约束的适配判断。
+- 被拒绝候选方案及拒绝原因，便于后续轮次减少重复尝试。
 
 禁止写入内容：
 
@@ -290,6 +346,7 @@ outputs/agent_research/strategy_review.md
 - 工作区不干净。
 - 真实 speaker 音频无法解码。
 - 自动分段无法为每个 speaker 产生 10 个片段。
+- 显存检查或固定训练命令出现 CUDA OOM。
 - 训练或评估命令连续两轮失败。
 - 评估结果与预期 schema 不一致。
 - 发现修改范围越界。
@@ -330,11 +387,11 @@ GitHub 插件默认只读：
 人工审查一个保留实验时，至少检查：
 
 - 是否只改了允许文件。
-- 参数量是否小于 150,000。
+- 参数量和显存记录是否完整，固定训练命令是否能在本机 RTX 4060 显存内稳定完成。
 - 评估命令是否使用固定 train/evaluate/noise_eval 命令。
 - clean accuracy 和 noise mean accuracy 是否都合理。
 - SNR 曲线是否存在明显异常。
-- 代码是否仍然能解释为课程要求内的小模型。
+- 代码是否仍然能解释为课程要求内的本地从零训练模型，没有引入预训练权重或新增依赖。
 - 是否没有新增依赖、没有修改数据、没有改评估脚本。
 
 建议人工通过后，再由人决定是否把保留 commit cherry-pick 到正式开发分支或开 PR。
