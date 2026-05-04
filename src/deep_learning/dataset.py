@@ -72,6 +72,8 @@ class DigitSpeechDataset(Dataset):
             audio = self._augment(audio)
 
         features = log_mel_spectrogram(audio, self.feature_config)
+        if self.training:
+            features = _mask_training_features(features, self.rng)
         label = np.int64(sample.label)
         return torch.from_numpy(features), torch.tensor(label, dtype=torch.long)
 
@@ -113,6 +115,20 @@ def _time_shift(audio: np.ndarray, shift: int) -> np.ndarray:
     else:
         shifted[:shift] = audio[-shift:]
     return shifted
+
+
+def _mask_training_features(features: np.ndarray, rng: np.random.Generator) -> np.ndarray:
+    masked = features.copy()
+    _, n_mels, n_frames = masked.shape
+    if n_mels > 0 and rng.random() < 0.50:
+        width = int(rng.integers(1, min(5, n_mels) + 1))
+        start = int(rng.integers(0, n_mels - width + 1))
+        masked[:, start : start + width, :] = 0.0
+    if n_frames > 0 and rng.random() < 0.50:
+        width = int(rng.integers(1, min(9, n_frames) + 1))
+        start = int(rng.integers(0, n_frames - width + 1))
+        masked[:, :, start : start + width] = 0.0
+    return masked
 
 
 def build_train_val_datasets(
