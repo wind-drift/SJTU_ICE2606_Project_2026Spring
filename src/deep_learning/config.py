@@ -40,7 +40,7 @@ class TrainConfig:
     batch_size: int = 16
     epochs: int = 200
     learning_rate: float = 1e-3
-    weight_decay: float = 1e-4
+    weight_decay: float = 5e-4
     patience: int = 30
     seed: int = 42
     noise_prob: float = 0.30
