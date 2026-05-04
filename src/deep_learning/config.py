@@ -39,7 +39,7 @@ class FeatureConfig:
 class TrainConfig:
     batch_size: int = 16
     epochs: int = 200
-    learning_rate: float = 1e-3
+    learning_rate: float = 7e-4
     weight_decay: float = 1e-4
     patience: int = 30
     seed: int = 42
