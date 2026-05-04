@@ -18,7 +18,7 @@ class FeatureConfig:
     max_seconds: float = 1.5
     preemphasis: float = 0.97
     n_fft: int = 512
-    win_length: int = 400
+    win_length: int = 480
     hop_length: int = 160
     n_mels: int = 40
     n_mfcc: int = 13
