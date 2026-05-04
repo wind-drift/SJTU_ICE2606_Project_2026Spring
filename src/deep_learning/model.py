@@ -15,6 +15,27 @@ class ConvBlock(nn.Sequential):
         )
 
 
+class ResidualBlock(nn.Module):
+    def __init__(self, in_channels: int, out_channels: int) -> None:
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.shortcut = nn.Identity()
+        if in_channels != out_channels:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False),
+                nn.BatchNorm2d(out_channels),
+            )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        residual = self.shortcut(x)
+        x = torch.relu(self.bn1(self.conv1(x)))
+        x = self.bn2(self.conv2(x))
+        return torch.relu(x + residual)
+
+
 class TinyKeywordCNN(nn.Module):
     def __init__(self, num_classes: int = 10, dropout: float = 0.30) -> None:
         super().__init__()
@@ -25,7 +46,7 @@ class TinyKeywordCNN(nn.Module):
             nn.MaxPool2d(kernel_size=2),
             ConvBlock(32, 64),
             nn.MaxPool2d(kernel_size=2),
-            ConvBlock(64, 128),
+            ResidualBlock(64, 128),
             nn.AdaptiveAvgPool2d((1, 1)),
         )
         self.classifier = nn.Sequential(
