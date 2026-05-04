@@ -55,7 +55,7 @@ class TrainConfig:
     weight_decay: float = 1e-4
     patience: int = 30
     seed: int = 42
-    noise_prob: float = 0.30
+    noise_prob: float = 0.45
     gain_db: float = 3.0
     time_shift_ms: float = 120.0
 
