@@ -27,13 +27,12 @@ class TinyKeywordCNN(nn.Module):
             ConvBlock(32, 64),
             nn.MaxPool2d(kernel_size=2),
             ConvBlock(64, 128, dilation=1),
-            ConvBlock(128, 128),
-            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.AdaptiveAvgPool2d((2, 2)),
         )
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Dropout(dropout),
-            nn.Linear(128, num_classes),
+            nn.Linear(512, num_classes),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
