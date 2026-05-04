@@ -26,7 +26,7 @@ class FeatureConfig:
     include_delta: bool = False
     include_delta_delta: bool = True
     denoise: str = "none"
-    spectral_subtract_strength: float = 0.5
+    spectral_subtract_strength: float = 1.0
     spectral_floor: float = 0.05
     fmin: float = 20.0
     fmax: float = 7_600.0
