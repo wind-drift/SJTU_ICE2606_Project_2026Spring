@@ -1,0 +1,35 @@
+﻿{
+    "feature_config":  {
+                           "sr":  16000,
+                           "max_seconds":  1.5,
+                           "preemphasis":  0.97,
+                           "n_fft":  512,
+                           "win_length":  400,
+                           "hop_length":  160,
+                           "n_mels":  40,
+                           "n_mfcc":  13,
+                           "feature_kind":  "mfcc",
+                           "include_delta":  true,
+                           "include_delta_delta":  true,
+                           "denoise":  "none",
+                           "spectral_subtract_strength":  1.0,
+                           "spectral_floor":  0.05,
+                           "fmin":  20.0,
+                           "fmax":  7600.0
+                       },
+    "train_config":  {
+                         "batch_size":  16,
+                         "epochs":  120,
+                         "learning_rate":  0.001,
+                         "weight_decay":  0.0001,
+                         "patience":  20,
+                         "seed":  42,
+                         "noise_prob":  0.3,
+                         "gain_db":  3.0,
+                         "time_shift_ms":  120.0
+                     },
+    "parameter_count":  102522,
+    "best_epoch":  37,
+    "best_val_accuracy":  0.95,
+    "checkpoint":  "outputs/deep_learning/tiny_cnn.pt"
+}
