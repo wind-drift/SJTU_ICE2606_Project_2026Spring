@@ -1,3 +1,9 @@
+"""
+tradition method, advanced
+using mfcc+delta+delta^2 and gmm
+Jing Xu
+"""
+
 import os
 import numpy as np
 import pandas as pd
@@ -10,9 +16,6 @@ from scipy.fftpack import dct
 from sklearn.mixture import GaussianMixture
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 
-# ==========================================
-# 1. 配置路径与参数 (与 Baseline 保持一致)
-# ==========================================
 METADATA_PATH = "data/processed/metadata.csv"
 NOISE_PATH = "data/noise/mixed_noise.wav"
 OUTPUT_DIR = "results/traditional/advanced_gmm"
@@ -28,9 +31,6 @@ NOISE_REPEATS = 20
 def ensure_dir(path):
     os.makedirs(path, exist_ok=True)
 
-# ==========================================
-# 2. 基础信号处理与特征提取 (手写 MFCC 升级版)
-# ==========================================
 def load_wav(path):
     y, sr = sf.read(path)
     if y.ndim > 1: y = np.mean(y, axis=1)
@@ -77,7 +77,6 @@ def compute_mfcc(y, sr, num_ceps=13, nfilt=26, nfft=512):
     return mfcc
 
 def compute_delta(feat, N=2):
-    """计算一阶或二阶差分特征 (Delta)"""
     padded = np.pad(feat, ((N, N), (0, 0)), mode='edge')
     delta = np.zeros_like(feat)
     denominator = sum([2 * (i**2) for i in range(1, N+1)])
@@ -86,36 +85,19 @@ def compute_delta(feat, N=2):
     return delta
 
 def extract_advanced_features(path):
-    """
-    Advanced 特征提取:
-    1. 13维 MFCC
-    2. + 13维 Delta
-    3. + 13维 Delta-Delta
-    4. CMVN (倒谱均值方差归一化)
-    返回 shape: (n_frames, 39)
-    """
     y, sr = load_wav(path)
-    
-    # 基于短时能量的简单静音切除 (VAD)
-    # 计算能量并保留能量大于阈值的帧
+
     mfcc = compute_mfcc(y, sr)
-    
-    # 动态特征
+
     delta1 = compute_delta(mfcc, N=2)
     delta2 = compute_delta(delta1, N=2)
-    
-    # 拼接为 39 维
+
     feat_39 = np.concatenate([mfcc, delta1, delta2], axis=1)
-    
-    # CMVN: 按句子进行均值方差归一化
-    # 极大缓解信道影响和音量大小差异
+
     feat_cmvn = (feat_39 - np.mean(feat_39, axis=0)) / (np.std(feat_39, axis=0) + 1e-8)
     
     return feat_cmvn
 
-# ==========================================
-# 3. 数据集加载与处理
-# ==========================================
 def load_dataset(metadata_path):
     metadata = pd.read_csv(metadata_path)
     features, labels, splits, paths = [], [], [], []
@@ -123,7 +105,7 @@ def load_dataset(metadata_path):
     for _, row in metadata.iterrows():
         path = row["path"]
         feat = extract_advanced_features(path)
-        features.append(feat) # 保留变长帧矩阵
+        features.append(feat)
         labels.append(int(row["label"]))
         splits.append(row["split"])
         paths.append(path)
@@ -131,19 +113,14 @@ def load_dataset(metadata_path):
     info = pd.DataFrame({"path": paths, "label": labels, "split": splits})
     return features, np.array(labels), info
 
-# ==========================================
-# 4. 模型定义与训练 (GMM)
-# ==========================================
 class GMMClassifier:
     def __init__(self, n_components=4):
         self.n_components = n_components
         self.models = {}
 
     def fit(self, X_train, y_train):
-        print(f"Training GMMs ({self.n_components} components per class)...")
+        print(f"Training GMMs...")
         for c in TARGET_LABELS:
-            # 将属于该类别的所有语音帧拼接到一起
-            # X_train 中的每个元素是 (n_frames, 39)
             X_c = np.vstack([X_train[i] for i in range(len(X_train)) if y_train[i] == c])
             
             gmm = GaussianMixture(n_components=self.n_components, covariance_type='diag', random_state=42)
@@ -153,23 +130,17 @@ class GMMClassifier:
     def predict(self, X_val):
         predictions = []
         for x in X_val:
-            # 计算当前样本(n_frames, 39)在各个GMM模型下的平均对数似然
             scores = [self.models[c].score(x) for c in TARGET_LABELS]
             predictions.append(np.argmax(scores))
         return np.array(predictions)
 
-# ==========================================
-# 5. 加噪与鲁棒性测试
-# ==========================================
 def mix_noise(y_clean, y_noise, snr):
     if len(y_noise) < len(y_clean):
         y_noise = np.tile(y_noise, int(np.ceil(len(y_clean)/len(y_noise))))
-    
-    # 随机截取一段噪声
+
     start = np.random.randint(0, len(y_noise) - len(y_clean) + 1)
     noise_segment = y_noise[start:start + len(y_clean)]
-    
-    # 计算能量并按 SNR 混合
+
     p_clean = np.mean(y_clean ** 2) + 1e-8
     p_noise = np.mean(noise_segment ** 2) + 1e-8
     
@@ -192,11 +163,10 @@ def evaluate_noise_robustness(model, val_info, noise_wav_path):
             noisy_features = []
             y_true = []
             for _, row in val_info.iterrows():
-                # 动态加噪并提取特征
+
                 y_clean, sr = load_wav(row["path"])
                 y_noisy = mix_noise(y_clean, y_noise, snr)
-                
-                # 提取特征 (与 clean 过程一致)
+
                 mfcc = compute_mfcc(y_noisy, sr)
                 d1 = compute_delta(mfcc, N=2)
                 d2 = compute_delta(d1, N=2)
@@ -217,9 +187,6 @@ def evaluate_noise_robustness(model, val_info, noise_wav_path):
         
     return results
 
-# ==========================================
-# 6. 绘图与结果保存
-# ==========================================
 def plot_confusion_matrix(cm, output_path):
     plt.figure(figsize=(7, 6))
     plt.imshow(cm, interpolation="nearest", cmap="Blues")
@@ -254,16 +221,13 @@ def plot_snr_curve(results, output_path):
     plt.savefig(output_path, dpi=200)
     plt.close()
 
-# ==========================================
-# 主流程
-# ==========================================
 def main():
     ensure_dir(OUTPUT_DIR)
     ensure_dir(FIGURE_DIR)
     ensure_dir(TABLE_DIR)
     ensure_dir(METRIC_DIR)
 
-    print("Loading dataset and extracting advanced features...")
+    print("Loading...")
     X_all, y_all, info = load_dataset(METADATA_PATH)
     
     train_mask = info["split"] == "train"
@@ -275,8 +239,7 @@ def main():
     y_val = y_all[val_mask]
     val_info = info[val_mask].copy()
     
-    # 1. 训练与 Clean 评估
-    model = GMMClassifier(n_components=4) # 每个数字用 4 个高斯分量
+    model = GMMClassifier(n_components=4)
     model.fit(X_train, y_train)
     
     y_pred_clean = model.predict(X_val)
@@ -286,23 +249,20 @@ def main():
     
     print(f"\nClean Accuracy: {clean_acc:.4f}")
     
-    # 保存 Clean 结果
     plot_confusion_matrix(cm, os.path.join(FIGURE_DIR, "clean_confusion_matrix.png"))
     with open(os.path.join(METRIC_DIR, "clean_metrics.txt"), "w") as f:
         f.write(f"Clean validation accuracy\n{clean_acc:.6f}\n\nClassification report\n{report}\n")
         
-    # 2. 噪声评估
     if os.path.exists(NOISE_PATH):
         noise_results = evaluate_noise_robustness(model, val_info, NOISE_PATH)
         plot_snr_curve(noise_results, os.path.join(FIGURE_DIR, "accuracy_snr_curve.png"))
         
-        # 存 CSV
         df_noise = pd.DataFrame(noise_results, columns=["SNR", "Mean_Acc", "Std_Acc"])
         df_noise.to_csv(os.path.join(TABLE_DIR, "snr_accuracy_summary.csv"), index=False)
     else:
-        print(f"\nNoise file not found at {NOISE_PATH}. Skipping noise test.")
+        print(f"\nNoise file not found at {NOISE_PATH}.")
 
-    print(f"\nAll done! Results saved to {OUTPUT_DIR}")
+    print(f"\nResults saved to {OUTPUT_DIR}")
 
 if __name__ == "__main__":
     main()
