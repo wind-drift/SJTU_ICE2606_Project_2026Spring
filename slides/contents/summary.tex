@@ -5,7 +5,7 @@
 
 \begin{frame}{识别结果对比与噪声鲁棒性}
   \begin{columns}[T]
-    \column{0.48\textwidth}
+    \column{0.42\textwidth}
     \centering
     \textbf{纯净语音识别结果}
     \medskip
@@ -14,48 +14,64 @@
       \textbf{方法} & \textbf{维度} & \textbf{准确率} \\
       \midrule
       MFCC-stat + KNN   & 26 维 & 80.0\% \\
-      MFCC + $\Delta$/$\Delta^2$ + GMM & 39 维 & \alert{100.0\%} \\
+      MFCC+$\Delta$/$\Delta^2$+GMM & 39 维 & \alert{100.0\%} \\
       TinyKeywordCNN (102k) & 39 维 & 95.0\% \\
       \bottomrule
     \end{tabular}
 
     \medskip
-    \raggedright
+    \raggedright\small
     \begin{itemize}
-      \item \textbf{GMM} 利用完整序列信息，纯净条件下达 100\%
-      \item \textbf{CNN} 小样本下表现良好，但 1 个误判 (2$\to$6)
-      \item \textbf{KNN} 丢失时间结构，出现 4 个混淆错误
+      \item GMM：20 条验证样本全部正确
+      \item CNN：1 个误判（$2\to6$），KNN：4 个混淆
     \end{itemize}
 
-    \column{0.48\textwidth}
+    \column{0.55\textwidth}
     \centering
     \textbf{噪声鲁棒性（SNR--Accuracy）}
-    \medskip
-    \footnotesize
-    \begin{tabular}{cccc}
-      \toprule
-      \textbf{SNR (dB)} & \textbf{KNN} & \textbf{GMM} & \textbf{CNN} \\
-      \midrule
-      -10 & 0.158 & 0.100 & \alert{0.20} \\
-      -5  & 0.243 & 0.158 & \alert{0.45} \\
-      0   & 0.350 & 0.380 & \alert{0.60} \\
-      5   & 0.283 & 0.558 & \alert{0.55} \\
-      10  & 0.295 & 0.725 & \alert{0.75} \\
-      15  & 0.368 & 0.853 & \alert{0.70} \\
-      20  & 0.503 & 0.913 & \alert{0.95} \\
-      \bottomrule
-    \end{tabular}
+    \vspace{-2pt}
+    \begin{tikzpicture}
+    \begin{axis}[
+      width=5.5cm, height=5.2cm,
+      xlabel={SNR (dB)},
+      ylabel={Accuracy},
+      xmin=-12, xmax=22,
+      ymin=0, ymax=1.05,
+      xtick={-10,-5,0,5,10,15,20},
+      ytick={0,0.2,0.4,0.6,0.8,1.0},
+      legend style={font=\tiny, legend pos=south east},
+      grid=major,
+      ticklabel style={font=\tiny},
+      label style={font=\footnotesize},
+      mark options={scale=0.8},
+    ]
+    \addplot[blue, thick, mark=triangle*] coordinates {
+      (-10,0.1575)(-5,0.2425)(0,0.35)(5,0.2825)(10,0.295)(15,0.3675)(20,0.5025)
+    };
+    \addlegendentry{KNN (20-rep mean)}
 
-    \medskip
-    \raggedright
-    \begin{itemize}
-      \footnotesize
-      \item \textbf{低 SNR}（$-10$, $-5$ dB）：CNN 数据增强带来优势
-      \item \textbf{中高 SNR}（$\ge 5$ dB）：GMM 时序建模 + CMVN 领先
-      \item KNN/GMM：20 次重复均值；CNN：单次测试
-      \item 共同规律：SNR $\uparrow$ $\to$ 准确率单调 $\uparrow$
-    \end{itemize}
+    \addplot[green!50!black, thick, mark=square*] coordinates {
+      (-10,0.1000)(-5,0.1575)(0,0.38)(5,0.5575)(10,0.725)(15,0.8525)(20,0.9125)
+    };
+    \addlegendentry{GMM (20-rep mean)}
+
+    \addplot[red, thick, mark=*] coordinates {
+      (-10,0.20)(-5,0.45)(0,0.60)(5,0.55)(10,0.75)(15,0.70)(20,0.95)
+    };
+    \addlegendentry{CNN (single)}
+    \end{axis}
+    \end{tikzpicture}
+
+    {\tiny KNN/GMM 为 20 次重复均值；CNN 为单次测试，统计意义不完全等价}
   \end{columns}
+
+  \medskip
+  \raggedright\footnotesize
+  \begin{itemize}
+    \item 总体上准确率随 SNR 提高而上升；由于验证集较小且 CNN 为单次测试，局部存在波动
+    \item 低 SNR（$-10$, $-5$ dB）：CNN 数据增强带来优势
+    \item 中高 SNR（$\ge 5$ dB）：GMM 时序建模 + CMVN 归一化表现更好
+  \end{itemize}
 \end{frame}
 
 \begin{frame}{总结、局限性与团队分工}
@@ -64,43 +80,36 @@
     \textbf{已完成工作}
     \begin{itemize}
       \item 基于短时能量端点检测的自动语音切分
-      \item 完整的 MFCC 特征提取流程（预加重 $\to$ 分帧 $\to$ FFT
-            $\to$ Mel 滤波 $\to$ DCT）
-      \item 传统方法：MFCC-stat + KNN 基线，MFCC + $\Delta$/$\Delta^2$ + GMM 高级模型
-      \item 深度方法：TinyKeywordCNN 端到端训练与评估
+      \item 完整 MFCC 特征提取（预加重 $\to$ 分帧 $\to$ FFT $\to$ Mel 滤波 $\to$ DCT）
+      \item 传统方法：KNN 基线 + GMM 模型
+      \item 深度方法：TinyKeywordCNN 训练与评估
       \item 混合噪声下 7 级 SNR 鲁棒性评估
     \end{itemize}
 
     \medskip
     \textbf{核心结论}
     \begin{enumerate}
-      \item 基于傅里叶分析的 MFCC 特征对数字语音有良好区分度
-      \item 动态特征（$\Delta$, $\Delta^2$）显著提升识别性能
-      \item 小样本场景下 GMM 优于 CNN；噪声增强改善低 SNR 鲁棒性
+      \item MFCC 特征对数字语音有良好区分度
+      \item 动态特征、序列建模、CMVN 与 GMM 似然判决共同提升了传统方法性能
+      \item 本验证集纯净语音和中高 SNR 下 GMM 更优；低 SNR 下 CNN 受噪声增强影响较稳
     \end{enumerate}
 
     \column{0.46\textwidth}
     \textbf{局限性}
     \begin{itemize}
       \item 验证集仅 20 样本，统计意义有限
-      \item 单一混合噪声类型，未测试白噪声/粉红噪声等单独类型
+      \item 单一混合噪声类型，未测试各噪声单独影响
       \item 未进行说话人交叉验证
-      \item 深度学习未尝试更先进架构（残差、注意力等）
+      \item 深度学习未尝试残差、注意力等架构
     \end{itemize}
 
     \medskip
     \textbf{团队分工}
     \begin{itemize}
-      \item [成员 A] 传统方法实现（KNN, GMM）、噪声鲁棒性测试
-      \item [成员 B] 深度方法实现（CNN）、模型训练与调优
-      \item [成员 C] 数据分析与可视化、汇报材料制作
+      \item 组员信息待补充
+      \item 组员信息待补充
+      \item 组员信息待补充
+      \item 组员信息待补充
     \end{itemize}
-
-    \medskip
-    {\footnotesize
-    \textbf{参考文献}
-    [1] Sainath \& Parada. CNN for Small-footprint KWS. \emph{Interspeech}, 2015.
-    [2] Kim et al. Broadcasted Residual Learning for Efficient KWS. \emph{arXiv:2106.04140}.
-    }
   \end{columns}
 \end{frame}

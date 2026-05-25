@@ -1,5 +1,5 @@
-\beamer@sectionintoc {1}{任务背景与数据集}{1}{0}{1}
-\beamer@sectionintoc {2}{信号分析与特征提取}{2}{0}{2}
-\beamer@sectionintoc {3}{整体算法流程}{4}{0}{3}
-\beamer@sectionintoc {4}{识别方法}{5}{0}{4}
-\beamer@sectionintoc {5}{结果分析与总结}{8}{0}{5}
+\beamer@sectionintoc {1}{任务背景与数据集}{2}{0}{1}
+\beamer@sectionintoc {2}{信号分析与特征提取}{3}{0}{2}
+\beamer@sectionintoc {3}{整体算法流程}{5}{0}{3}
+\beamer@sectionintoc {4}{识别方法}{6}{0}{4}
+\beamer@sectionintoc {5}{结果分析与总结}{9}{0}{5}

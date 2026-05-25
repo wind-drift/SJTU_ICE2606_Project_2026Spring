@@ -4,8 +4,10 @@
 \documentclass[xcolor=table,dvipsnames,svgnames,aspectratio=169]{ctexbeamer}
 
 \usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
 \usepackage[normalem]{ulem}
-\usetikzlibrary{arrows}
+\usetikzlibrary{arrows, shapes.geometric, positioning, chains, calc}
 \usepackage{amsmath}
 \usepackage{bm}
 \usepackage{graphicx}
@@ -63,7 +65,7 @@
   breaklines,%
 }
 
-\author{Team Name}
+\author{组员信息待补充}
 \institute[SJTU]{上海交通大学电子信息与电气工程学院}
 \date{2026 年 5 月}
 \subject{信号与系统课程大作业汇报}
@@ -75,6 +77,10 @@
 \subtitle{ICE2606 信号与系统 · 课程大作业汇报}
 
 \begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
 
 \include{contents/introduction}
 \include{contents/basis}
