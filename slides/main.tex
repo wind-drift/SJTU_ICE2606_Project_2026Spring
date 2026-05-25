@@ -1,0 +1,87 @@
+% !TeX program = xelatex
+% !TeX encoding = UTF-8
+
+\documentclass[xcolor=table,dvipsnames,svgnames,aspectratio=169]{ctexbeamer}
+
+\usepackage{tikz}
+\usepackage[normalem]{ulem}
+\usetikzlibrary{arrows}
+\usepackage{amsmath}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{hologo}
+\usepackage{colortbl}
+\usepackage{shapepar}
+\usepackage{hyperxmp}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{tipa}
+\usepackage{multicol}
+\usepackage{datetime2}
+\usepackage{fontawesome5}
+\usepackage{hyperref}
+
+% 参考文献设置
+\usepackage[backend=biber,style=gb7714-2015]{biblatex}
+\addbibresource{ref.bib}
+
+% 指定图像的额外搜索路径
+\graphicspath{
+  {figures/}
+  {../outputs/deep_learning/}
+  {../outputs/deep_learning/signal_analysis/}
+  {../results/traditional/signal_analysis/figures/}
+  {../results/traditional/baseline_knn/figures/}
+  {../results/traditional/advanced_gmm/figures/}
+  {../results/traditional/noise_robustness_v2/}
+}
+
+\hypersetup{
+  pdfcopyright       = {Licensed under CC-BY-SA 4.0. Some rights reserved.},
+  pdflicenseurl      = {http://creativecommons.org/licenses/by-sa/4.0/},
+  unicode            = true,
+  psdextra           = true,
+  pdfdisplaydoctitle = true
+}
+
+\pdfstringdefDisableCommands{
+  \let\\\relax
+  \let\quad\relax
+  \let\hspace\@gobble
+}
+
+\newcommand{\SJTUBeamer}{\textsc{SJTUBeamer}}
+\newcommand{\SJTUBeamerVersion}{3.2.0}
+\newcommand{\SJTUBeamerDate}{2026/5/20}
+
+\usetheme[maxplus]{sjtubeamer}
+
+\lstset{
+  language=[LaTeX]TeX,
+  tabsize=2,
+  basicstyle=\ttfamily\small,%
+  breaklines,%
+}
+
+\author{Team Name}
+\institute[SJTU]{上海交通大学电子信息与电气工程学院}
+\date{2026 年 5 月}
+\subject{信号与系统课程大作业汇报}
+\keywords{语音识别, MFCC, KNN, GMM, CNN, 信号与系统}
+
+\title[孤立数字语音识别]
+{\textbf{基于信号处理的孤立数字语音识别}}
+
+\subtitle{ICE2606 信号与系统 · 课程大作业汇报}
+
+\begin{document}
+
+\include{contents/introduction}
+\include{contents/basis}
+\include{contents/algorithm}
+\include{contents/thesis}
+\include{contents/summary}
+
+\makebottom
+
+\end{document}

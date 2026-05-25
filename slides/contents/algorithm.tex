@@ -1,0 +1,40 @@
+% !TeX encoding = UTF-8
+% !TeX root = ../main.tex
+
+\section{整体算法流程}
+
+\begin{frame}{整体算法流程与信号处理关联}
+  \small
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+    \textbf{端到端识别流程}
+    \begin{enumerate}
+      \item 原始语音 $\to$ 端点检测 $\to$ 切分
+      \item 预加重（$y[n] = x[n] - 0.97 x[n-1]$，一阶高通 FIR）
+      \item 分帧加窗（25 ms Hamming，10 ms 帧移）
+      \item FFT $\to$ 功率谱 $\to$ Mel 滤波器组（26 个三角滤波器）
+      \item Log 能量压缩 $\to$ DCT $\to$ 13 维 MFCC
+      \item 动态特征 $\Delta$, $\Delta^2$（一阶/二阶差分）$\to$ 39 维
+      \item 特征构造 $\to$ 分类器（KNN / GMM / CNN）$\to$ 预测 0--9
+    \end{enumerate}
+
+    \column{0.44\textwidth}
+    \begin{block}{信号与系统核心关联}
+      \begin{itemize}
+        \item \textbf{FFT}：时域到频域的桥梁
+        \item \textbf{STFT}：非平稳信号的时频联合分析
+        \item \textbf{Mel 滤波器组}：模拟人耳非线性频率感知
+        \item \textbf{DCT}：频域去相关与能量压缩
+        \item \textbf{预加重}：一阶高通 FIR 滤波器
+        \item \textbf{分帧加窗}：短时平稳假设下的信号截断
+      \end{itemize}
+    \end{block}
+
+    \medskip
+    \textbf{两条技术路线}
+    \begin{itemize}
+      \item \textbf{传统方法}：手工特征 + 经典分类器（KNN / GMM）
+      \item \textbf{深度方法}：MFCC 特征图 + 卷积神经网络（CNN）
+    \end{itemize}
+  \end{columns}
+\end{frame}

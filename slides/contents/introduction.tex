@@ -1,0 +1,50 @@
+% !TeX encoding = UTF-8
+% !TeX root = ../main.tex
+
+\section{任务背景与数据集}
+
+\begin{frame}{任务背景与数据集}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+    \textbf{任务描述}
+    \begin{itemize}
+      \item 孤立数字语音识别（0--9），小词汇量关键词识别
+      \item \textbf{课程关联}：傅里叶变换（FFT）、短时傅里叶变换（STFT）、
+            滤波器组（Mel 尺度）、倒谱分析（DCT）
+      \item \textbf{方法路线}：传统信号处理 + 机器学习，以及端到端深度学习
+    \end{itemize}
+
+    \medskip
+    \textbf{数据集}
+    \begin{itemize}
+      \item 7 位说话人，每人朗读 0--9 共 10 个数字
+      \item 采样率 16 kHz，单声道，MP3 格式
+      \item 基于短时能量的端点检测自动切分
+    \end{itemize}
+    \[
+    \begin{array}{c|c|c}
+      \toprule
+      \text{划分} & \text{说话人} & \text{样本数} \\
+      \midrule
+      \text{训练集} & \text{speaker 1--5} & 50 \\
+      \text{验证集} & \text{speaker 6--7} & 20 \\
+      \bottomrule
+    \end{array}
+    \]
+
+    \column{0.46\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{time_waveform.png}\\[-4pt]
+    {\footnotesize 数字语音时域波形示例}
+
+    \bigskip
+    \textbf{评估指标}
+    \begin{itemize}
+      \item 纯净语音识别准确率 + 混淆矩阵
+      \item 混合噪声下鲁棒性——在 7 个 SNR 级别测试：
+            $\text{SNR} = 10\log_{10}(P_{\text{sig}} / P_{\text{noise}})\,\text{dB}$，
+            SNR 取 $\{-10, -5, 0, 5, 10, 15, 20\}\,\text{dB}$
+      \item 混合噪声 = 白噪声 + 粉红噪声 ($1/f$) + 50 Hz 工频干扰
+    \end{itemize}
+  \end{columns}
+\end{frame}
