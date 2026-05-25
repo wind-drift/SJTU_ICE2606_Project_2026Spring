@@ -3,55 +3,53 @@
 
 \section{信号分析与特征提取}
 
-\begin{frame}{信号分析：从时域到频域}
+\begin{frame}{信号分析：时域、频域与时频表示}
   \begin{columns}[T]
     \column{0.48\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{waveform.png}\\[-4pt]
-    {\footnotesize (a) 时域波形：非平稳信号}
+    \includegraphics[width=0.80\textwidth]{waveform.png}\\[-6pt]
+    {\footnotesize (a) 时域波形}
 
-    \bigskip
-    \includegraphics[width=\textwidth]{fft_spectrum.png}\\[-4pt]
+    \vspace{4pt}
+    \includegraphics[width=0.80\textwidth]{fft_spectrum.png}\\[-6pt]
     {\footnotesize (b) FFT 幅度谱（0--4000 Hz）}
 
     \column{0.48\textwidth}
-    \begin{itemize}
-      \item \textbf{时域}：语音是非平稳信号，幅值剧烈变化
-      \item \textbf{FFT 幅度谱}：低频能量集中，存在谐波峰值
-      \item \textbf{问题}：单一 FFT 丢失频率随时间变化的信息
-    \end{itemize}
-    \medskip
     \centering
-    \includegraphics[width=\textwidth]{spectrogram.png}\\[-4pt]
+    \includegraphics[width=0.80\textwidth]{spectrogram.png}\\[-6pt]
     {\footnotesize (c) STFT 语谱图}
+
+    \medskip
+    \raggedright\small
+    语音是非平稳信号，单一 FFT 丢失频率随时间变化的信息。STFT 通过分帧加窗实现时频联合分析：
     \[
     \operatorname{STFT}\{x[n]\}(m,\omega) = \sum_{n=-\infty}^{\infty} x[n] w[n-mR] e^{-j\omega n}
     \]
-    {\footnotesize 分帧（25 ms Hamming 窗，10 ms 帧移）$\to$ 逐帧 FFT $\to$ 语谱图}
+    {\footnotesize 25 ms Hamming 窗，10 ms 帧移}
   \end{columns}
 \end{frame}
 
 \begin{frame}{MFCC 特征提取流程}
+  \small
   \begin{columns}[T]
-    \column{0.52\textwidth}
+    \column{0.50\textwidth}
     \textbf{梅尔频率倒谱系数（MFCC）}
     \begin{enumerate}
-      \item \textbf{预加重}：$y[n] = x[n] - 0.97 x[n-1]$
+      \setlength{\itemsep}{1pt}
+      \item \textbf{预加重}：$y[n] = x[n] - 0.97 x[n-1]$（FIR 高通）
       \item \textbf{分帧加窗}：25 ms Hamming 窗，10 ms 帧移
-      \item \textbf{FFT $\to$ 功率谱}
-      \item \textbf{Mel 滤波器组}（26 个三角滤波器，低频密、高频疏）
-      \item \textbf{取对数}：压缩能量动态范围
-      \item \textbf{DCT}：去相关，取前 13 维作为倒谱系数
-      \item \textbf{动态特征}：$\Delta$ 和 $\Delta^2$（一阶/二阶差分）
+      \item \textbf{FFT $\to$ 功率谱 $\to$ Mel 滤波}：26 个三角滤波器（低频密、高频疏）
+      \item \textbf{取对数 + DCT}：压缩动态范围，去相关，取前 13 维
+      \item \textbf{动态特征}：$\Delta$ 和 $\Delta^2$（一阶/二阶差分）$\to$ 39 维
     \end{enumerate}
 
-    \column{0.44\textwidth}
+    \column{0.46\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{mfcc.png}\\[-4pt]
-    {\footnotesize 13 维 MFCC 特征图（传统方法）}
+    \includegraphics[width=0.80\textwidth]{mfcc.png}\\[-4pt]
+    {\footnotesize 13 维 MFCC（传统方法）}
 
-    \bigskip
-    \includegraphics[width=\textwidth]{mfcc_features.png}\\[-4pt]
-    {\footnotesize 39 维 MFCC + $\Delta$ + $\Delta^2$（深度学习方法）}
+    \vspace{8pt}
+    \includegraphics[width=0.80\textwidth]{mfcc_features.png}\\[-4pt]
+    {\footnotesize 39 维 MFCC + $\Delta$ + $\Delta^2$（深度方法）}
   \end{columns}
 \end{frame}

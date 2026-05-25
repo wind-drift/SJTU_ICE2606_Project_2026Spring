@@ -5,11 +5,10 @@
 
 \begin{frame}{整体算法流程与信号处理关联}
   \centering
-  \small
   \begin{tikzpicture}[
-    node distance=0.55cm and 0.5cm,
-    box/.style={draw, rounded corners=2pt, minimum width=0.85cm, minimum height=0.55cm,
-                align=center, font=\footnotesize},
+    node distance=0.40cm and 0.40cm,
+    box/.style={draw, rounded corners=2pt, minimum width=0.72cm, minimum height=0.44cm,
+                align=center, font=\scriptsize},
     pre/.style={box, fill=blue!12},
     feat/.style={box, fill=green!12},
     cls/.style={box, fill=orange!15},
@@ -18,19 +17,19 @@
   ]
 
   % --- Row 1: Preprocessing ---
-  \node[pre] (raw) {Raw\\MP3};
+  \node[pre] (raw) {语音\\输入};
   \node[pre, right=of raw] (ed) {端点\\检测};
-  \node[pre, right=of ed] (pe) {预加重\\$y[n]=x[n]-0.97x[n-1]$};
-  \node[pre, right=of pe] (frame) {分帧加窗\\25ms Ham, 10ms hop};
+  \node[pre, right=of ed] (pe) {预加重};
+  \node[pre, right=of pe] (frame) {分帧\\加窗};
 
   % --- Row 2: Feature Extraction ---
   \node[feat, right=of frame] (fft) {FFT\\$|\cdot|^2$};
-  \node[feat, right=of fft] (mel) {Mel 滤波\\26 个三角};
-  \node[feat, right=of mel] (logdct) {Log + DCT\\13 维};
-  \node[feat, right=of logdct] (mfcc) {MFCC\\+ $\Delta$/$\Delta^2$\\39 维};
+  \node[feat, right=of fft] (mel) {Mel\\滤波};
+  \node[feat, right=of mel] (logdct) {Log +\\DCT};
+  \node[feat, right=of logdct] (mfcc) {MFCC\\+$\Delta$/$\Delta^2$};
 
   % --- Row 3: Classification ---
-  \node[cls, below=1.0cm of mfcc] (clf) {KNN / GMM / CNN};
+  \node[cls, below=0.65cm of mfcc] (clf) {KNN / GMM / CNN};
   \node[output, right=of clf] (pred) {预测\\0--9};
 
   % --- Arrows ---
@@ -41,33 +40,32 @@
   \draw[arr] (fft) -- (mel);
   \draw[arr] (mel) -- (logdct);
   \draw[arr] (logdct) -- (mfcc);
-  \draw[arr] (mfcc.south) -- ++(0,-0.35) -| (clf.north);
+  \draw[arr] (mfcc.south) -- ++(0,-0.18) -| (clf.north);
   \draw[arr] (clf) -- (pred);
 
   % --- Labels ---
-  \node[font=\footnotesize\bfseries, above=0.15cm of raw.north, anchor=south] {预处理};
-  \node[font=\footnotesize\bfseries, above=0.15cm of fft.north, anchor=south] {特征提取};
-  \node[font=\footnotesize\bfseries, below=0.15cm of clf.south, anchor=north] {分类器};
+  \node[font=\scriptsize\bfseries, above=0.12cm of raw.north, anchor=south] {预处理};
+  \node[font=\scriptsize\bfseries, above=0.12cm of fft.north, anchor=south] {特征提取};
+  \node[font=\scriptsize\bfseries, below=0.12cm of clf.south, anchor=north] {分类器};
 
   \end{tikzpicture}
 
-  \medskip
+  \vspace{0pt}
   \begin{columns}[T]
     \column{0.48\textwidth}
     \begin{block}{两条技术路线}
-      \footnotesize
+      \scriptsize
       \begin{itemize}
-        \item \textbf{传统方法}：手工特征 + KNN（统计）/ GMM（序列）
-        \item \textbf{深度方法}：MFCC 特征图 + 卷积神经网络（TinyKeywordCNN）
+        \item \textbf{传统}：手工特征 + KNN（统计）/ GMM（序列）
+        \item \textbf{深度}：MFCC 特征图 + 卷积神经网络
       \end{itemize}
     \end{block}
 
     \column{0.48\textwidth}
     \begin{block}{信号与系统核心关联}
-      \footnotesize
+      \scriptsize
       \begin{itemize}
-        \item FFT：时域到频域的桥梁
-        \item STFT：非平稳信号的时频联合分析
+        \item FFT：时域到频域的桥梁；STFT：时频联合分析
         \item Mel 滤波器组：模拟人耳非线性频率感知
         \item DCT：频域去相关与能量压缩
         \item 预加重/分帧加窗：FIR 滤波与短时平稳假设

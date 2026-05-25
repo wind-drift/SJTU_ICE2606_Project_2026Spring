@@ -18,11 +18,10 @@
     \column{0.44\textwidth}
     \centering
     \includegraphics[width=\textwidth]{../results/traditional/baseline_knn/figures/clean_confusion_matrix.png}\\[-4pt]
-    {\footnotesize 纯净语音混淆矩阵（20 条验证样本）}
+    {\footnotesize 纯净语音混淆矩阵（准确率 \alert{80.0\%}，16/20）}
 
     \medskip
     \begin{itemize}
-      \item 准确率：\alert{80.0\%}（16/20）
       \item 主要混淆：$0\!\to\!7$, $2\!\to\!8$, $4\!\to\!3$, $6\!\to\!9$
     \end{itemize}
   \end{columns}
@@ -43,11 +42,10 @@
     \column{0.44\textwidth}
     \centering
     \includegraphics[width=\textwidth]{../results/traditional/advanced_gmm/figures/clean_confusion_matrix.png}\\[-4pt]
-    {\footnotesize 纯净语音混淆矩阵（20 条验证样本）}
+    {\footnotesize 纯净语音混淆矩阵（准确率 \alert{100.0\%}，20/20）}
 
     \medskip
     \begin{itemize}
-      \item 准确率：\alert{100.0\%}（20/20）
       \item 20 条验证样本全部识别正确
     \end{itemize}
   \end{columns}
@@ -63,18 +61,16 @@
       \item Conv2d + BatchNorm + ReLU + MaxPooling
       \item AdaptiveAvgPool(2,2) + Dropout(0.3) + Linear $\to$ 10
       \item 总参数量：\alert{102,522}
-      \item 训练：AdamW（lr=0.001），数据增强（$\pm3$dB 增益、$\pm120$ms 平移、随机加噪）
-      \item 早停 patience=20，最优 epoch 37
+      \item 训练：AdamW（lr=0.001），含数据增强，早停 patience=20
     \end{itemize}
 
     \column{0.44\textwidth}
     \centering
     \includegraphics[width=\textwidth]{../outputs/deep_learning/clean_confusion_matrix.png}\\[-4pt]
-    {\footnotesize 纯净语音混淆矩阵（20 条验证样本）}
+    {\footnotesize 纯净语音混淆矩阵（准确率 \alert{95.0\%}，19/20）}
 
     \medskip
     \begin{itemize}
-      \item 准确率：\alert{95.0\%}（19/20）
       \item 1 个错误：数字 2 误判为 6
     \end{itemize}
   \end{columns}
