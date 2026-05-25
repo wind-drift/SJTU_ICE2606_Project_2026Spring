@@ -1,0 +1,61 @@
+% !TeX encoding = UTF-8
+% !TeX root = ../main.tex
+
+\section{信号分析与特征提取}
+
+\begin{frame}{信号分析：从时域到频域}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{waveform.png}\\[-4pt]
+    {\footnotesize (a) 时域波形：非平稳信号，幅值随时间剧烈变化}
+
+    \bigskip
+    \includegraphics[width=\textwidth]{fft_spectrum.png}\\[-4pt]
+    {\footnotesize (b) FFT 幅度谱（0--4000 Hz）：低频能量集中，存在谐波峰值}
+
+    \column{0.48\textwidth}
+    \begin{itemize}
+      \item \textbf{时域}：语音是非平稳信号，幅值随时间剧烈变化
+      \item \textbf{FFT 幅度谱}：整体频域能量分布，低频能量集中
+      \item \textbf{问题}：单一 FFT 丢失了频率随时间变化的信息
+    \end{itemize}
+    \medskip
+    \centering
+    \includegraphics[width=\textwidth]{spectrogram.png}\\[-4pt]
+    {\footnotesize (c) STFT 语谱图：横轴时间，纵轴频率，颜色表示能量}
+    \[
+    \operatorname{STFT}\{x[n]\}(m,\omega) = \sum_{n=-\infty}^{\infty} x[n] w[n-mR] e^{-j\omega n}
+    \]
+    {\footnotesize 分帧（25 ms Hamming 窗，10 ms 帧移）$\to$ 逐帧 FFT $\to$ 语谱图}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{MFCC 特征提取流程}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+    \textbf{梅尔频率倒谱系数（MFCC）}
+    \begin{enumerate}
+      \item \textbf{预加重}：$y[n] = x[n] - 0.97 x[n-1]$（补偿高频衰减）
+      \item \textbf{分帧加窗}：25 ms Hamming 窗，10 ms 帧移
+      \item \textbf{FFT $\to$ 功率谱}：$|\text{FFT}|^2$
+      \item \textbf{Mel 滤波器组}：模拟人耳非线性频率感知
+            \[
+            \operatorname{mel}(f) = 2595 \cdot \log_{10}\left(1 + \frac{f}{700}\right)
+            \]
+            低频密、高频疏的三角滤波器组
+      \item \textbf{取对数}：压缩能量动态范围，模拟响度感知
+      \item \textbf{DCT}：去相关，取前 13 维作为倒谱系数
+      \item \textbf{动态特征}：$\Delta$ 和 $\Delta^2$（一阶/二阶差分），反映特征随时间变化
+    \end{enumerate}
+
+    \column{0.44\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{mfcc.png}\\[-4pt]
+    {\footnotesize 传统方法：13 维 MFCC 特征图}
+
+    \bigskip
+    \includegraphics[width=\textwidth]{mfcc_features.png}\\[-4pt]
+    {\footnotesize 深度学习方法：MFCC + $\Delta$ + $\Delta^2$（共 39 维）}
+  \end{columns}
+\end{frame}
