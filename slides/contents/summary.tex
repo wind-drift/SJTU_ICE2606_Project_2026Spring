@@ -98,26 +98,15 @@
 \begin{frame}{总结与局限性}
   \footnotesize
   \begin{columns}[T,totalwidth=\textwidth]
-    \column{0.45\textwidth}
-    \textbf{\large 已完成工作}
-    \vspace{2pt}
-    \begin{itemize}
-      \setlength{\itemsep}{3pt}
-      \item 基于短时能量的自动端点检测
-      \item 完整 MFCC 特征提取流程
-      \item 传统方法：KNN 基线 + GMM 序列模型
-      \item 深度方法：TinyKeywordCNN
-      \item 7 级 SNR 混合噪声鲁棒性评估
-    \end{itemize}
-
     \column{0.51\textwidth}
     \textbf{\large 核心结论}
     \vspace{2pt}
     \begin{enumerate}
       \setlength{\itemsep}{3pt}
-      \item MFCC 对孤立数字语音具有良好区分度
-      \item GMM 在纯净语音与中高 SNR 下表现最好
-      \item CNN 在低 SNR 下受益于数据增强，但单次测试统计意义有限
+      \item MFCC 能有效刻画孤立数字语音的谱包络差异，是本任务的关键声学特征。
+      \item KNN 基线简单可解释，但均值/标准差统计会丢失时序信息，鲁棒性较弱。
+      \item GMM 保留变长序列特征，在纯净语音和中高 SNR 下表现最稳定；在 20 dB 时准确率达到 90% 以上。
+      \item TinyKeywordCNN 受益于数据增强，在低 SNR 下表现相对平稳。
     \end{enumerate}
 
     \vspace{5pt}
@@ -125,9 +114,19 @@
     \vspace{2pt}
     \begin{itemize}
       \setlength{\itemsep}{2pt}
-      \item 验证集仅 20 条，统计意义有限
+      \item 验证集仅 20 条，结果存在一定偶然性，统计意义有限
       \item 仅测试统一混合噪声，未拆分单类噪声影响
       \item 未进行说话人交叉验证
     \end{itemize}
   \end{columns}
+
+  \textbf{\large 团队分工}
+    \vspace{2pt}
+    \begin{itemize}
+      \setlength{\itemsep}{2pt}
+      \item 于沛龙：传统方法基线、噪声鲁棒性测试、PPT 整理
+      \item 景序：GMM 序列模型、传统方法优化与结果分析
+      \item 封宇凡：深度学习模型设计、训练与评估
+      \item 孟德轩：数据处理、实验对照、报告与展示材料整理
+    \end{itemize}
 \end{frame}
