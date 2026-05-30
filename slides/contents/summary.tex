@@ -96,12 +96,13 @@
 \end{frame}
 
 \begin{frame}{总结与局限性}
-  \small
-  \begin{columns}[T]
-    \column{0.48\textwidth}
-    \textbf{已完成工作}
+  \footnotesize
+  \begin{columns}[T,totalwidth=\textwidth]
+    \column{0.45\textwidth}
+    \textbf{\large 已完成工作}
+    \vspace{2pt}
     \begin{itemize}
-      \setlength{\itemsep}{2pt}
+      \setlength{\itemsep}{3pt}
       \item 基于短时能量的自动端点检测
       \item 完整 MFCC 特征提取流程
       \item 传统方法：KNN 基线 + GMM 序列模型
@@ -109,21 +110,23 @@
       \item 7 级 SNR 混合噪声鲁棒性评估
     \end{itemize}
 
-    \column{0.48\textwidth}
-    \textbf{核心结论}
+    \column{0.51\textwidth}
+    \textbf{\large 核心结论}
+    \vspace{2pt}
     \begin{enumerate}
-      \setlength{\itemsep}{2pt}
+      \setlength{\itemsep}{3pt}
       \item MFCC 对孤立数字语音具有良好区分度
       \item GMM 在纯净语音与中高 SNR 下表现最好
       \item CNN 在低 SNR 下受益于数据增强，但单次测试统计意义有限
     \end{enumerate}
 
-    \vspace{4pt}
-    \textbf{局限性}
+    \vspace{5pt}
+    \textbf{\large 局限性}
+    \vspace{2pt}
     \begin{itemize}
-      \setlength{\itemsep}{1pt}
+      \setlength{\itemsep}{2pt}
       \item 验证集仅 20 条，统计意义有限
-      \item 只测试统一混合噪声，未拆分单类噪声影响
+      \item 仅测试统一混合噪声，未拆分单类噪声影响
       \item 未进行说话人交叉验证
     \end{itemize}
   \end{columns}
