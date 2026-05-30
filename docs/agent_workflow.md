@@ -94,8 +94,8 @@ agent 单轮实验只允许修改以下文件：
 
 禁止修改：
 
-- `reference/`
 - `data/raw/`
+- `data/noise/`
 - `requirements.txt`
 - `.gitignore`
 - `README.md`

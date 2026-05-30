@@ -1,0 +1,7 @@
+{
+  "accuracy": 1.0,
+  "num_samples": 20,
+  "checkpoint": "outputs/deep_learning_compliant/final_required_noise/tiny_cnn.pt",
+  "best_epoch": 54,
+  "best_val_accuracy_recorded": 1.0
+}

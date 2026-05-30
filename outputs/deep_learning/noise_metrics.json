@@ -1,0 +1,39 @@
+{
+  "rows": [
+    {
+      "noise_kind": "mixed",
+      "snr_db": -10.0,
+      "accuracy": 0.2
+    },
+    {
+      "noise_kind": "mixed",
+      "snr_db": -5.0,
+      "accuracy": 0.45
+    },
+    {
+      "noise_kind": "mixed",
+      "snr_db": 0.0,
+      "accuracy": 0.6
+    },
+    {
+      "noise_kind": "mixed",
+      "snr_db": 5.0,
+      "accuracy": 0.55
+    },
+    {
+      "noise_kind": "mixed",
+      "snr_db": 10.0,
+      "accuracy": 0.75
+    },
+    {
+      "noise_kind": "mixed",
+      "snr_db": 15.0,
+      "accuracy": 0.7
+    },
+    {
+      "noise_kind": "mixed",
+      "snr_db": 20.0,
+      "accuracy": 0.95
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+noise_kind,snr_db,accuracy
+mixed,-10.0,0.2
+mixed,-5.0,0.45
+mixed,0.0,0.6
+mixed,5.0,0.55
+mixed,10.0,0.75
+mixed,15.0,0.7
+mixed,20.0,0.95

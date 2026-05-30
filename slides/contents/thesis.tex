@@ -1,0 +1,65 @@
+% !TeX encoding = UTF-8
+% !TeX root = ../main.tex
+
+\section{识别方法}
+
+\begin{frame}{传统方法一：MFCC 统计特征 + KNN}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+    \textbf{特征与分类器}
+    \begin{itemize}
+      \item 13 维 MFCC 逐帧取均值 $\boldsymbol{\mu}$ 与标准差 $\boldsymbol{\sigma}$
+      \item 拼接为 26 维固定长度特征：$\mathbf{f} = [\boldsymbol{\mu},\ \boldsymbol{\sigma}]$
+      \item StandardScaler 标准化 + 1-NN（$k=1$，欧氏距离）
+      \item 优点：简单、可解释、适合小样本
+      \item 缺点：统计池化丢失时间顺序信息，加入 $\Delta$ 、 $\Delta^2$ 后验证准确率下降，说明小样本高维特征下欧氏距离不稳定
+    \end{itemize}
+
+    \column{0.44\textwidth}
+    \centering
+    \includegraphics[width=0.88\textwidth]{../results/traditional/baseline_knn/figures/clean_confusion_matrix.png}\\[-4pt]
+    {\footnotesize 纯净语音混淆矩阵（准确率 \alert{80.0\%}，16/20） 主要混淆：$0\rightarrow 7$, $2\rightarrow 8$, $4\rightarrow 3$, $6\rightarrow 9$}
+
+  \end{columns}
+\end{frame}
+
+\begin{frame}{传统方法二：MFCC + $\Delta$ + $\Delta^2$ + GMM}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+    \textbf{特征与模型}
+    \begin{itemize}
+      \item 引入 MFCC + $\Delta$ + $\Delta^2$ 的 39 维帧级序列特征
+      \item CMVN（倒谱均值方差归一化）：提升信道鲁棒性
+      \item 每类训练一个 4 分量对角协方差 GMM
+      \item 判决：最大对数似然 $\hat{y} = \arg\max_c \sum_t \log p(\mathbf{x}_t\mid\lambda_c)$
+      \item 优点：相比 KNN 统计池化，GMM 更适合建模语音的时序变化
+    \end{itemize}
+
+    \column{0.44\textwidth}
+    \centering
+    \includegraphics[width=0.88\textwidth]{../results/traditional/advanced_gmm/figures/clean_confusion_matrix.png}\\[-4pt]
+    {\footnotesize 纯净语音混淆矩阵（准确率 \alert{100.0\%}，20/20） 20 条验证样本全部识别正确}
+     
+  \end{columns}
+\end{frame}
+
+\begin{frame}{深度学习方法：TinyKeywordCNN}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+    \textbf{模型架构与训练}
+    \begin{itemize}
+      \item 输入：$39 \times T$ MFCC 特征图
+      \item 4 个卷积块（通道数 $1\to16\to32\to64\to128$）
+      \item Conv2d + BatchNorm + ReLU + MaxPooling
+      \item AdaptiveAvgPool(2,2) + Dropout(0.3) + Linear $\to$ 10
+      \item 总参数量：\alert{102,522}
+      \item 训练：AdamW（lr=0.001），含数据增强，早停 patience=30
+    \end{itemize}
+
+    \column{0.44\textwidth}
+    \centering
+    \includegraphics[width=0.88\textwidth]{../outputs/deep_learning/clean_confusion_matrix.png}\\[-4pt]
+    {\footnotesize 纯净语音混淆矩阵（准确率 \alert{95.0\%}，19/20） 1 个错误：数字 2 误判为 6}
+
+  \end{columns}
+\end{frame}

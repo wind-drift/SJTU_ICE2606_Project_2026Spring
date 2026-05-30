@@ -1,0 +1,64 @@
+% !TeX encoding = UTF-8
+% !TeX root = ../main.tex
+
+\section{整体算法流程}
+
+\begin{frame}{整体算法流程与信号处理关联}
+  \small
+  \centering
+
+  \begin{tikzpicture}[
+    stage/.style={
+      draw, rounded corners=3pt,
+      minimum height=1.05cm,
+      align=center,
+      font=\small,
+      text width=3.5cm
+    },
+    arr/.style={->, >=stealth, thick}
+  ]
+    \node[stage, fill=blue!10] (pre) {
+      \textbf{预处理}\\
+      语音输入 $\rightarrow$ 端点检测 $\rightarrow$ 预加重
+    };
+
+    \node[stage, fill=green!10, right=0.85cm of pre] (feat) {
+      \textbf{特征提取}\\
+      分帧加窗 $\rightarrow$ FFT $\rightarrow$ Mel $\rightarrow$ MFCC / $\Delta$ / $\Delta^2$
+    };
+
+    \node[stage, fill=orange!14, right=0.85cm of feat] (cls) {
+      \textbf{分类预测}\\
+      KNN / GMM / CNN $\rightarrow$ 数字 0--9
+    };
+
+    \draw[arr] (pre) -- (feat);
+    \draw[arr] (feat) -- (cls);
+  \end{tikzpicture}
+
+  \vspace{0.45cm}
+
+  \begin{columns}[T,totalwidth=\textwidth]
+    \column{0.47\textwidth}
+    \begin{block}{两条技术路线}
+      \footnotesize
+      \begin{itemize}
+        \setlength{\itemsep}{1pt}
+        \item \textbf{传统方法}：KNN 使用 MFCC 统计特征；GMM 使用 MFCC + Δ + Δ² 序列特征
+        \item \textbf{深度方法}：CNN 使用 MFCC 动态特征图进行卷积分类
+      \end{itemize}
+    \end{block}
+
+    \column{0.49\textwidth}
+    \begin{block}{信号与系统核心关联}
+      \footnotesize
+      \begin{itemize}
+        \setlength{\itemsep}{1pt}
+        \item 语音建模：离散非平稳信号 + 混合噪声
+        \item FFT / STFT：频域分解与时频联合分析
+        \item 预加重：一阶 FIR 高通系统
+        \item Mel + DCT：频域加权、倒谱压缩与去相关
+      \end{itemize}
+    \end{block}
+  \end{columns}
+\end{frame}
