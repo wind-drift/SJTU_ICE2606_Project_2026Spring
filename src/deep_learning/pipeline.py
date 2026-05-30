@@ -26,6 +26,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--patience", type=int, default=TrainConfig.patience)
     parser.add_argument("--batch-size", type=int, default=TrainConfig.batch_size)
     parser.add_argument("--seed", type=int, default=TrainConfig.seed)
+    parser.add_argument("--noise-prob", type=float, default=TrainConfig.noise_prob)
+    parser.add_argument("--train-noise-kinds", nargs="+", default=list(TrainConfig.train_noise_kinds))
+    parser.add_argument("--gain-db", type=float, default=TrainConfig.gain_db)
+    parser.add_argument("--time-shift-ms", type=float, default=TrainConfig.time_shift_ms)
     parser.add_argument("--feature-kind", choices=["mfcc", "log_mel"], default=FeatureConfig.feature_kind)
     parser.add_argument("--denoise", choices=["none", "notch", "spectral", "notch_spectral"], default=FeatureConfig.denoise)
     parser.add_argument("--n-mels", type=int, default=FeatureConfig.n_mels)
@@ -33,7 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--speaker-id", type=int, default=1)
     parser.add_argument("--digit", type=int, default=0)
     parser.add_argument("--noise-kinds", nargs="+", default=["mixed"])
-    parser.add_argument("--snr", nargs="+", type=int, default=list(SNR_LEVELS))
+    parser.add_argument("--snr", nargs="+", type=float, default=list(SNR_LEVELS))
     parser.add_argument("--skip-training", action="store_true")
     return parser.parse_args()
 
@@ -97,6 +101,14 @@ def main() -> None:
                 str(args.batch_size),
                 "--seed",
                 str(args.seed),
+                "--noise-prob",
+                str(args.noise_prob),
+                "--train-noise-kinds",
+                *args.train_noise_kinds,
+                "--gain-db",
+                str(args.gain_db),
+                "--time-shift-ms",
+                str(args.time_shift_ms),
                 *common_feature_args,
             ]
         )

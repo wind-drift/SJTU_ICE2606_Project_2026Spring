@@ -9,7 +9,25 @@ from typing import Any
 TRAIN_SPEAKERS = (1, 2, 3, 4, 5)
 VAL_SPEAKERS = (6, 7)
 DIGIT_LABELS = tuple(range(10))
-SNR_LEVELS = (-10, -5, 0, 5, 10, 15, 20)
+SNR_LEVELS = (
+    -10.0,
+    -7.5,
+    -5.0,
+    -2.5,
+    0.0,
+    2.5,
+    5.0,
+    7.5,
+    10.0,
+    12.5,
+    15.0,
+    17.5,
+    20.0,
+    22.5,
+    25.0,
+    27.5,
+    30.0,
+)
 
 
 @dataclass(frozen=True)
@@ -23,7 +41,7 @@ class FeatureConfig:
     n_mels: int = 40
     n_mfcc: int = 13
     feature_kind: str = "mfcc"
-    include_delta: bool = False
+    include_delta: bool = True
     include_delta_delta: bool = True
     denoise: str = "none"
     spectral_subtract_strength: float = 1.0
@@ -50,14 +68,15 @@ class FeatureConfig:
 @dataclass(frozen=True)
 class TrainConfig:
     batch_size: int = 16
-    epochs: int = 200
+    epochs: int = 500
     learning_rate: float = 1e-3
     weight_decay: float = 1e-4
-    patience: int = 30
+    patience: int = 160
     seed: int = 42
-    noise_prob: float = 0.30
-    gain_db: float = 3.0
-    time_shift_ms: float = 120.0
+    noise_prob: float = 0.45
+    train_noise_kinds: tuple[str, ...] = ("mixed",)
+    gain_db: float = 2.0
+    time_shift_ms: float = 80.0
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

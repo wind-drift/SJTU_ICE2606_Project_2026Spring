@@ -490,6 +490,18 @@ def rms(audio: np.ndarray) -> float:
     return float(np.sqrt(np.mean(np.square(audio, dtype=np.float64)) + EPS))
 
 
+def normalize_noise_rms(noise: np.ndarray) -> np.ndarray:
+    noise = np.asarray(noise, dtype=np.float32)
+    noise = np.nan_to_num(noise, copy=False)
+    if noise.size == 0:
+        return noise
+    noise = noise - float(noise.mean())
+    value = rms(noise)
+    if value <= EPS:
+        return np.zeros_like(noise, dtype=np.float32)
+    return (noise / value).astype(np.float32, copy=False)
+
+
 def fit_noise_length(noise: np.ndarray, length: int, rng: np.random.Generator) -> np.ndarray:
     noise = np.asarray(noise, dtype=np.float32)
     if len(noise) == 0:
@@ -500,7 +512,7 @@ def fit_noise_length(noise: np.ndarray, length: int, rng: np.random.Generator) -
     if len(noise) > length:
         start = int(rng.integers(0, len(noise) - length + 1))
         noise = noise[start : start + length]
-    return normalize_audio(noise)
+    return normalize_noise_rms(noise)
 
 
 def generate_noise(
@@ -516,7 +528,7 @@ def generate_noise(
 
     if kind == "white":
         noise = rng.standard_normal(length)
-    elif kind == "pink":
+    elif kind in {"pink", "1/f", "one_over_f"}:
         freqs = np.fft.rfftfreq(length, d=1.0 / sr)
         weights = np.ones_like(freqs)
         weights[1:] = 1.0 / np.sqrt(np.maximum(freqs[1:], EPS))
@@ -525,7 +537,7 @@ def generate_noise(
         if length % 2 == 0:
             spectrum[-1] = spectrum[-1].real + 0j
         noise = np.fft.irfft(spectrum, n=length)
-    elif kind in {"power", "50hz", "powerline"}:
+    elif kind in {"power", "50hz", "50_hz", "fifty_hz", "powerline"}:
         t = np.arange(length, dtype=np.float32) / float(sr)
         noise = np.sin(2 * np.pi * 50.0 * t)
     elif kind == "mixed":
@@ -538,7 +550,7 @@ def generate_noise(
     else:
         raise ValueError(f"Unknown noise kind: {kind}")
 
-    return normalize_audio(np.asarray(noise, dtype=np.float32))
+    return normalize_noise_rms(np.asarray(noise, dtype=np.float32))
 
 
 def add_noise_at_snr(clean: np.ndarray, noise: np.ndarray, snr_db: float) -> np.ndarray:

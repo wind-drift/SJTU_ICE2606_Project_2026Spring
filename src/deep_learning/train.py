@@ -80,6 +80,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--patience", type=int, default=TrainConfig.patience)
     parser.add_argument("--seed", type=int, default=TrainConfig.seed)
     parser.add_argument("--noise-prob", type=float, default=TrainConfig.noise_prob)
+    parser.add_argument("--train-noise-kinds", nargs="+", default=list(TrainConfig.train_noise_kinds))
     parser.add_argument("--gain-db", type=float, default=TrainConfig.gain_db)
     parser.add_argument("--time-shift-ms", type=float, default=TrainConfig.time_shift_ms)
     parser.add_argument("--max-seconds", type=float, default=FeatureConfig.max_seconds)
@@ -119,6 +120,7 @@ def main() -> None:
         patience=args.patience,
         seed=args.seed,
         noise_prob=args.noise_prob,
+        train_noise_kinds=tuple(args.train_noise_kinds),
         gain_db=args.gain_db,
         time_shift_ms=args.time_shift_ms,
     )
@@ -129,6 +131,7 @@ def main() -> None:
         seed=args.seed,
         noise_path=args.noise_path,
         noise_prob=args.noise_prob,
+        train_noise_kinds=tuple(args.train_noise_kinds),
         gain_db=args.gain_db,
         time_shift_ms=args.time_shift_ms,
     )

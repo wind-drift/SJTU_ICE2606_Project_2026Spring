@@ -27,7 +27,7 @@ def run_noise_evaluation(
     output_dir: str | Path = "outputs/deep_learning",
     noise_path: str | Path | None = "reference/mixed_noise.wav",
     noise_kinds: tuple[str, ...] = ("mixed",),
-    snr_levels: tuple[int, ...] = SNR_LEVELS,
+    snr_levels: tuple[float, ...] = SNR_LEVELS,
     batch_size: int = 16,
     seed: int = 42,
     device_name: str = "auto",
@@ -68,7 +68,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", default="outputs/deep_learning")
     parser.add_argument("--noise-path", default="reference/mixed_noise.wav")
     parser.add_argument("--noise-kinds", nargs="+", default=["mixed"])
-    parser.add_argument("--snr", nargs="+", type=int, default=list(SNR_LEVELS))
+    parser.add_argument("--snr", nargs="+", type=float, default=list(SNR_LEVELS))
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default="auto")
