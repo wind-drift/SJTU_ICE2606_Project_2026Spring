@@ -12,7 +12,7 @@
       \item 拼接为 26 维固定长度特征：$\mathbf{f} = [\boldsymbol{\mu},\ \boldsymbol{\sigma}]$
       \item StandardScaler 标准化 + 1-NN（$k=1$，欧氏距离）
       \item 优点：简单、可解释、适合小样本
-      \item 缺点：丢失时间顺序信息
+      \item 缺点：统计池化丢失时间顺序信息，加入 $\Delta$ 、 $\Delta^2$ 后验证准确率下降，说明小样本高维特征下欧氏距离不稳定
     \end{itemize}
 
     \column{0.44\textwidth}
@@ -28,11 +28,11 @@
     \column{0.52\textwidth}
     \textbf{特征与模型}
     \begin{itemize}
-      \item 13 维 MFCC + $\Delta$ + $\Delta^2$ = 39 维序列特征
+      \item 引入 MFCC + $\Delta$ + $\Delta^2$ 的 39 维帧级序列特征
       \item CMVN（倒谱均值方差归一化）：提升信道鲁棒性
       \item 每类训练一个 4 分量对角协方差 GMM
       \item 判决：最大对数似然 $\hat{y} = \arg\max_c \sum_t \log p(\mathbf{x}_t\mid\lambda_c)$
-      \item 优点：天然适合变长序列，无需压缩为固定维度
+      \item 优点：相比 KNN 统计池化，GMM 更适合建模语音的时序变化
     \end{itemize}
 
     \column{0.44\textwidth}
@@ -53,7 +53,7 @@
       \item Conv2d + BatchNorm + ReLU + MaxPooling
       \item AdaptiveAvgPool(2,2) + Dropout(0.3) + Linear $\to$ 10
       \item 总参数量：\alert{102,522}
-      \item 训练：AdamW（lr=0.001），含数据增强，早停 patience=20
+      \item 训练：AdamW（lr=0.001），含数据增强，早停 patience=30
     \end{itemize}
 
     \column{0.44\textwidth}

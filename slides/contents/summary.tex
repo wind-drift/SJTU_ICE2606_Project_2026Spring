@@ -13,10 +13,10 @@
 
     \begin{tabular}{lcc}
       \toprule
-      \textbf{方法} & \textbf{维度} & \textbf{准确率} \\
+      \textbf{方法} & \textbf{输入特征} & \textbf{准确率} \\
       \midrule
       MFCC-stat + KNN   & 26 维 & 80.0\% \\
-      MFCC+$\Delta$/$\Delta^2$+GMM & 39 维 & \alert{100.0\%} \\
+      MFCC+$\Delta$/$\Delta^2$+GMM & 39 维 & 100.0\% \\
       TinyKeywordCNN (102k) & 39 维 & 95.0\% \\
       \bottomrule
     \end{tabular}
@@ -26,7 +26,7 @@
     \begin{itemize}
       \setlength{\itemsep}{2pt}
       \item GMM：20 条验证样本全部识别正确
-      \item CNN：1 个误判（$2\to6$）
+      \item CNN：1 个误判（$2 \rightarrow 6$）
       \item KNN：4 个混淆，说明统计特征丢失了部分时序信息
     \end{itemize}
 
@@ -34,9 +34,9 @@
     \textbf{对比结论}
     \begin{itemize}
       \setlength{\itemsep}{4pt}
-      \item 动态特征能补充语音变化趋势
-      \item GMM 保留变长序列信息，适合小样本任务
-      \item CNN 具有端到端建模能力，但本实验验证集较小
+      \item KNN 简单可解释，但均值/标准差统计池化会丢失帧级时间顺序
+      \item GMM 保留变长帧序列信息，更适合建模语音的动态变化
+      \item CNN 利用 MFCC 特征图进行卷积分类，具有较强表示能力；但验证集较小，结果仍需结合噪声测试进一步判断
     \end{itemize}
   \end{columns}
 \end{frame}
@@ -52,9 +52,9 @@
     \textbf{MFCC-stat + KNN}
     \begin{itemize}
       \setlength{\itemsep}{4pt}
-      \item 每个 SNR 重复 20 次，曲线展示均值与波动范围
-      \item 低 SNR 下准确率明显下降
-      \item 最高 SNR 下仍未达到 90\%，说明均值/标准差统计特征鲁棒性有限
+      \item 每个 SNR 重复 20 次，曲线展示均值与标准差
+      \item 低 SNR 下准确率明显下降，20 dB 时也仅恢复到约 50\%
+      \item 说明均值/标准差统计特征对噪声敏感，且 KNN 的欧氏距离度量在带噪条件下不稳定
     \end{itemize}
   \end{columns}
 \end{frame}
@@ -71,8 +71,8 @@
     \begin{itemize}
       \setlength{\itemsep}{4pt}
       \item 引入动态特征与 CMVN 归一化
-      \item 中高 SNR 下性能提升明显
-      \item 在 20 dB 时达到 90\% 以上准确率（91.25\%）
+      \item 中高 SNR 下性能提升明显，误差棒整体较小
+      \item 准确率随 SNR 提升稳定上升，20 dB 时达到 91.25\%
     \end{itemize}
   \end{columns}
 \end{frame}
@@ -89,8 +89,8 @@
     \begin{itemize}
       \setlength{\itemsep}{4pt}
       \item 训练中加入增益、平移和随机噪声增强
-      \item 低 SNR 下相对更稳
-      \item CNN 为单次测试，统计意义与 KNN/GMM 的重复均值不完全等价
+      \item 低 SNR 下下降较缓，但单次测试统计意义有限
+      \item CNN 为单次测试，因此主要用于观察趋势，不与 KNN/GMM 的均值曲线作严格统计比较
     \end{itemize}
   \end{columns}
 \end{frame}
@@ -98,35 +98,39 @@
 \begin{frame}{总结与局限性}
   \footnotesize
   \begin{columns}[T,totalwidth=\textwidth]
-    \column{0.51\textwidth}
+    \column{0.52\textwidth}
     \textbf{\large 核心结论}
     \vspace{2pt}
     \begin{enumerate}
       \setlength{\itemsep}{3pt}
-      \item MFCC 能有效刻画孤立数字语音的谱包络差异，是本任务的关键声学特征。
-      \item KNN 基线简单可解释，但均值/标准差统计会丢失时序信息，鲁棒性较弱。
-      \item GMM 保留变长序列特征，在纯净语音和中高 SNR 下表现最稳定；在 20 dB 时准确率达到 90% 以上。
-      \item TinyKeywordCNN 受益于数据增强，在低 SNR 下表现相对平稳。
+      \item MFCC 能有效刻画孤立数字语音的谱包络差异，是本任务的关键声学特征。在混合噪声测试中，各模型准确率整体随 SNR 提升而改善。
+      \item KNN 基线简单可解释，但均值/标准差统计池化会丢失帧级时序信息，鲁棒性较弱。
+      \item GMM 保留变长帧序列特征，在纯净语音和中高 SNR 下表现最稳定；20 dB 时准确率达到 91.25\%。
+      \item TinyKeywordCNN 受益于数据增强，在低 SNR 下仍有一定识别能力，但单次测试统计意义有限。
     \end{enumerate}
 
+    \column{0.44\textwidth}
     \vspace{5pt}
     \textbf{\large 局限性}
     \vspace{2pt}
     \begin{itemize}
       \setlength{\itemsep}{2pt}
-      \item 验证集仅 20 条，结果存在一定偶然性，统计意义有限
-      \item 仅测试统一混合噪声，未拆分单类噪声影响
-      \item 未进行说话人交叉验证
+      \item 验证集仅 20 条，结果存在一定偶然性，统计意义有限。
+      \item 本实验主要考察混合噪声下的整体鲁棒性，未进一步拆分单类噪声影响。
+      \item 未进行更完整的说话人交叉验证。
     \end{itemize}
   \end{columns}
+\end{frame}
 
-  \textbf{\large 团队分工}
-    \vspace{2pt}
+\begin{frame}{团队分工}
+
+\vspace{2pt}
     \begin{itemize}
       \setlength{\itemsep}{2pt}
-      \item 于沛龙：传统方法基线、噪声鲁棒性测试、PPT 整理
-      \item 景序：GMM 序列模型、传统方法优化与结果分析
-      \item 封宇凡：深度学习模型设计、训练与评估
-      \item 孟德轩：数据处理、实验对照、报告与展示材料整理
+      \item 于沛龙：传统方法基线、噪声鲁棒性测试、 PPT 整理；
+      \item 景序：GMM 序列模型、传统方法优化与结果分析；
+      \item 封宇凡：深度学习模型设计、训练与评估；
+      \item 孟德轩：数据处理、实验对照、报告与展示材料整理。
     \end{itemize}
+
 \end{frame}

@@ -8,41 +8,36 @@
     \column{0.50\textwidth}
     \centering
     \includegraphics[width=0.72\textwidth]{waveform.png}\\[-5pt]
-    {\footnotesize (a) 时域波形：幅值随时间变化}
+    {\footnotesize (a) 时域波形：反映语音的能量包络与起止位置}
 
     \vspace{4pt}
     \includegraphics[width=0.72\textwidth]{fft_spectrum.png}\\[-5pt]
-    {\footnotesize (b) FFT 幅度谱：频率能量分布}
+    {\footnotesize (b) FFT 幅度谱：反映整体频率能量分布}
+    
+    \vspace{8pt}
+    {\scriptsize 本实验采用 25 ms Hamming 窗，10 ms 帧移。}
 
     \column{0.46\textwidth}
     \centering
     \includegraphics[width=0.74\textwidth]{spectrogram.png}\\[-5pt]
-    {\footnotesize (c) STFT 语谱图：时频联合表示}
+    {\footnotesize (c) STFT 语谱图：反映频谱随时间的变化}
 
     \vspace{4pt}
     \raggedright\footnotesize
     \begin{itemize}
       \setlength{\itemsep}{1pt}
-      \item 语音是非平稳信号，频谱会随时间变化
-      \item STFT 通过分帧加窗保留局部频率信息
+      \item 语音是典型非平稳信号，整体 FFT 会丢失时间变化信息
+      \item 分帧加窗后进行 STFT，可同时观察时间、频率和能量分布
+      \item 这些分析结果为后续端点检测、MFCC 特征提取和噪声鲁棒性测试提供依据
     \end{itemize}
 
-    \vspace{-4pt}
-    {\scriptsize
-    \[
-      \operatorname{STFT}\{x[n]\}(m,\omega)
-      = \sum_n x[n]w[n-mR]e^{-j\omega n}
-    \]
-    }
-    \vspace{-8pt}
-    {\scriptsize 本实验采用 25 ms Hamming 窗，10 ms 帧移。}
   \end{columns}
 \end{frame}
 
 \begin{frame}{MFCC 特征提取流程}
   \small
   \begin{columns}[T]
-    \column{0.54\textwidth}
+    \column{0.58\textwidth}
     \textbf{梅尔频率倒谱系数（MFCC）}
     \begin{enumerate}
       \setlength{\itemsep}{1pt}
@@ -51,13 +46,16 @@
       \item \textbf{FFT $\to$ 功率谱}：获得短时频谱能量
       \item \textbf{Mel 滤波}：模拟人耳非线性频率感知
       \item \textbf{Log + DCT}：压缩动态范围并去相关
-      \item \textbf{动态特征}：加入 $\Delta,\Delta^2$，形成 39 维特征
+      \item \textbf{动态特征}：在 13 维 MFCC 基础上加入 $\Delta$, $\Delta^2$，形成 39 维特征
     \end{enumerate}
+
+    \vspace{0pt}
+    {\footnotesize 注：C0 主要反映整体能量，数值较大，易掩盖其余倒谱系数的细节。因此 13 维 MFCC 图在可视化时省略 C0；39 维图保留完整动态特征结构。}
 
     \column{0.42\textwidth}
     \centering
     \includegraphics[width=0.76\textwidth]{mfcc.png}\\[-4pt]
-    {\scriptsize 13 维 MFCC 特征图}
+    {\scriptsize 13 维 MFCC 特征图（可视化时未显示 C0）}
 
     \vspace{4pt}
     \includegraphics[width=0.76\textwidth]{mfcc_features.png}\\[-4pt]

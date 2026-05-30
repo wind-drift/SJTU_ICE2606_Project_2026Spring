@@ -19,17 +19,17 @@
   ]
     \node[stage, fill=blue!10] (pre) {
       \textbf{预处理}\\
-      语音输入 $\to$ 端点检测 $\to$ 预加重
+      语音输入 $\rightarrow$ 端点检测 $\rightarrow$ 预加重
     };
 
     \node[stage, fill=green!10, right=0.85cm of pre] (feat) {
       \textbf{特征提取}\\
-      分帧加窗 $\to$ FFT $\to$ Mel $\to$ MFCC
+      分帧加窗 $\rightarrow$ FFT $\rightarrow$ Mel $\rightarrow$ MFCC / $\Delta$ / $\Delta^2$
     };
 
     \node[stage, fill=orange!14, right=0.85cm of feat] (cls) {
       \textbf{分类预测}\\
-      KNN / GMM / CNN $\to$ 数字 0--9
+      KNN / GMM / CNN $\rightarrow$ 数字 0--9
     };
 
     \draw[arr] (pre) -- (feat);
@@ -44,8 +44,8 @@
       \footnotesize
       \begin{itemize}
         \setlength{\itemsep}{1pt}
-        \item \textbf{传统方法}：MFCC 统计特征 / 序列特征 + KNN / GMM
-        \item \textbf{深度方法}：MFCC 特征图 + TinyKeywordCNN
+        \item \textbf{传统方法}：KNN 使用 MFCC 统计特征；GMM 使用 MFCC + Δ + Δ² 序列特征
+        \item \textbf{深度方法}：CNN 使用 MFCC 动态特征图进行卷积分类
       \end{itemize}
     \end{block}
 
@@ -54,9 +54,10 @@
       \footnotesize
       \begin{itemize}
         \setlength{\itemsep}{1pt}
-        \item FFT / STFT：频域分析与时频联合分析
-        \item 预加重 / Mel 滤波：FIR 滤波与非线性频率映射
-        \item DCT：倒谱去相关与特征压缩
+        \item 语音建模：离散非平稳信号 + 混合噪声
+        \item FFT / STFT：频域分解与时频联合分析
+        \item 预加重：一阶 FIR 高通系统
+        \item Mel + DCT：频域加权、倒谱压缩与去相关
       \end{itemize}
     \end{block}
   \end{columns}
