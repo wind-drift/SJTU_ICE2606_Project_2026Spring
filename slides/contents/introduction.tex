@@ -4,47 +4,51 @@
 \section{任务背景与数据集}
 
 \begin{frame}{任务背景与数据集}
+  \small
   \begin{columns}[T]
     \column{0.50\textwidth}
-    \textbf{任务描述}
+    \textbf{任务目标}
     \begin{itemize}
-      \item 孤立数字语音识别（0--9），小词汇量关键词识别
-      \item \textbf{课程关联}：傅里叶变换（FFT）、短时傅里叶变换（STFT）、
-            滤波器组（Mel 尺度）、倒谱分析（DCT）
-      \item \textbf{方法路线}：传统信号处理 + 机器学习，以及端到端深度学习
+      \setlength{\itemsep}{1pt}
+      \item 识别孤立数字语音（0--9）
+      \item 提取 MFCC 特征并完成分类
+      \item 比较传统方法与深度学习方法
+      \item 测试混合噪声下的鲁棒性
     \end{itemize}
 
-    \medskip
+    \vspace{3pt}
     \textbf{数据集}
     \begin{itemize}
-      \item 7 位说话人，每人朗读 0--9 共 10 个数字
-      \item 采样率 16 kHz，单声道，MP3 格式
-      \item 基于短时能量的端点检测自动切分
+      \setlength{\itemsep}{1pt}
+      \item 7 位说话人，每人朗读 0--9
+      \item 16 kHz，单声道 MP3
+      \item 短时能量端点检测自动切分
     \end{itemize}
-    \[
-    \begin{array}{c|c|c}
-      \toprule
-      \text{划分} & \text{说话人} & \text{样本数} \\
-      \midrule
-      \text{训练集} & \text{speaker 1--5} & 50 \\
-      \text{验证集} & \text{speaker 6--7} & 20 \\
-      \bottomrule
-    \end{array}
-    \]
 
     \column{0.46\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{time_waveform.png}\\[-4pt]
-    {\footnotesize 数字语音时域波形示例}
+    \textbf{数据划分}
+    \vspace{-2pt}
+    \begin{table}
+      \centering
+      \footnotesize
+      \begin{tabular}{lcc}
+        \toprule
+        划分 & 说话人 & 样本数 \\
+        \midrule
+        训练集 & speaker 1--5 & 50 \\
+        验证集 & speaker 6--7 & 20 \\
+        \bottomrule
+      \end{tabular}
+    \end{table}
 
-    \bigskip
-    \textbf{评估指标}
+    \vspace{-5pt}
+    \textbf{评估设置}
     \begin{itemize}
-      \item 纯净语音识别准确率 + 混淆矩阵
-      \item 混合噪声下鲁棒性——在 7 个 SNR 级别测试：
-            $\text{SNR} = 10\log_{10}(P_{\text{sig}} / P_{\text{noise}})\,\text{dB}$，
-            SNR 取 $\{-10, -5, 0, 5, 10, 15, 20\}\,\text{dB}$
-      \item 混合噪声 = 白噪声 + 粉红噪声 ($1/f$) + 50 Hz 工频干扰
+      \setlength{\itemsep}{1pt}
+      \item 纯净语音：准确率 + 混淆矩阵
+      \item 带噪语音：7 级 SNR 鲁棒性
+      \item SNR：$-10,-5,0,5,10,15,20$ dB
+      \item 噪声：白噪声 + 1/f 噪声 + 50 Hz 工频
     \end{itemize}
   \end{columns}
 \end{frame}

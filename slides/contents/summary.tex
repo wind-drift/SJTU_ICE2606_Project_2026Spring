@@ -3,104 +3,131 @@
 
 \section{结果分析与总结}
 
-\begin{frame}{识别结果对比与噪声鲁棒性}
+\begin{frame}{纯净语音识别结果对比}
+  \small
   \begin{columns}[T]
-    \column{0.48\textwidth}
+    \column{0.56\textwidth}
     \centering
     \textbf{纯净语音识别结果}
-    \medskip
+    \vspace{4pt}
+
     \begin{tabular}{lcc}
       \toprule
       \textbf{方法} & \textbf{维度} & \textbf{准确率} \\
       \midrule
       MFCC-stat + KNN   & 26 维 & 80.0\% \\
-      MFCC + $\Delta$/$\Delta^2$ + GMM & 39 维 & \alert{100.0\%} \\
+      MFCC+$\Delta$/$\Delta^2$+GMM & 39 维 & \alert{100.0\%} \\
       TinyKeywordCNN (102k) & 39 维 & 95.0\% \\
       \bottomrule
     \end{tabular}
 
-    \medskip
+    \vspace{8pt}
     \raggedright
     \begin{itemize}
-      \item \textbf{GMM} 利用完整序列信息，纯净条件下达 100\%
-      \item \textbf{CNN} 小样本下表现良好，但 1 个误判 (2$\to$6)
-      \item \textbf{KNN} 丢失时间结构，出现 4 个混淆错误
+      \setlength{\itemsep}{2pt}
+      \item GMM：20 条验证样本全部识别正确
+      \item CNN：1 个误判（$2\to6$）
+      \item KNN：4 个混淆，说明统计特征丢失了部分时序信息
     \end{itemize}
 
-    \column{0.48\textwidth}
-    \centering
-    \textbf{噪声鲁棒性（SNR--Accuracy）}
-    \medskip
-    \footnotesize
-    \begin{tabular}{cccc}
-      \toprule
-      \textbf{SNR (dB)} & \textbf{KNN} & \textbf{GMM} & \textbf{CNN} \\
-      \midrule
-      -10 & 0.158 & 0.100 & \alert{0.20} \\
-      -5  & 0.243 & 0.158 & \alert{0.45} \\
-      0   & 0.350 & 0.380 & \alert{0.60} \\
-      5   & 0.283 & 0.558 & \alert{0.55} \\
-      10  & 0.295 & 0.725 & \alert{0.75} \\
-      15  & 0.368 & 0.853 & \alert{0.70} \\
-      20  & 0.503 & 0.913 & \alert{0.95} \\
-      \bottomrule
-    \end{tabular}
-
-    \medskip
-    \raggedright
+    \column{0.38\textwidth}
+    \textbf{对比结论}
     \begin{itemize}
-      \footnotesize
-      \item \textbf{低 SNR}（$-10$, $-5$ dB）：CNN 数据增强带来优势
-      \item \textbf{中高 SNR}（$\ge 5$ dB）：GMM 时序建模 + CMVN 领先
-      \item KNN/GMM：20 次重复均值；CNN：单次测试
-      \item 共同规律：SNR $\uparrow$ $\to$ 准确率单调 $\uparrow$
+      \setlength{\itemsep}{4pt}
+      \item 动态特征能补充语音变化趋势
+      \item GMM 保留变长序列信息，适合小样本任务
+      \item CNN 具有端到端建模能力，但本实验验证集较小
     \end{itemize}
   \end{columns}
 \end{frame}
 
-\begin{frame}{总结、局限性与团队分工}
+\begin{frame}{噪声鲁棒性：KNN 基线}
+  \small
   \begin{columns}[T]
-    \column{0.50\textwidth}
-    \textbf{已完成工作}
+    \column{0.62\textwidth}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../results/traditional/noise_robustness_v2/accuracy_snr_curve_mean_std.png}
+
+    \column{0.34\textwidth}
+    \textbf{MFCC-stat + KNN}
     \begin{itemize}
-      \item 基于短时能量端点检测的自动语音切分
-      \item 完整的 MFCC 特征提取流程（预加重 $\to$ 分帧 $\to$ FFT
-            $\to$ Mel 滤波 $\to$ DCT）
-      \item 传统方法：MFCC-stat + KNN 基线，MFCC + $\Delta$/$\Delta^2$ + GMM 高级模型
-      \item 深度方法：TinyKeywordCNN 端到端训练与评估
-      \item 混合噪声下 7 级 SNR 鲁棒性评估
+      \setlength{\itemsep}{4pt}
+      \item 每个 SNR 重复 20 次，曲线展示均值与波动范围
+      \item 低 SNR 下准确率明显下降
+      \item 最高 SNR 下仍未达到 90\%，说明均值/标准差统计特征鲁棒性有限
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{噪声鲁棒性：GMM 序列模型}
+  \small
+  \begin{columns}[T]
+    \column{0.62\textwidth}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../results/traditional/advanced_gmm/figures/accuracy_snr_curve.png}
+
+    \column{0.34\textwidth}
+    \textbf{MFCC + $\Delta$ + $\Delta^2$ + GMM}
+    \begin{itemize}
+      \setlength{\itemsep}{4pt}
+      \item 引入动态特征与 CMVN 归一化
+      \item 中高 SNR 下性能提升明显
+      \item 在 20 dB 时达到 90\% 以上准确率（91.25\%）
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{噪声鲁棒性：TinyKeywordCNN}
+  \small
+  \begin{columns}[T]
+    \column{0.62\textwidth}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../outputs/deep_learning/accuracy_snr_curve.png}
+
+    \column{0.34\textwidth}
+    \textbf{MFCC 特征图 + CNN}
+    \begin{itemize}
+      \setlength{\itemsep}{4pt}
+      \item 训练中加入增益、平移和随机噪声增强
+      \item 低 SNR 下相对更稳
+      \item CNN 为单次测试，统计意义与 KNN/GMM 的重复均值不完全等价
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{总结与局限性}
+  \footnotesize
+  \begin{columns}[T,totalwidth=\textwidth]
+    \column{0.45\textwidth}
+    \textbf{\large 已完成工作}
+    \vspace{2pt}
+    \begin{itemize}
+      \setlength{\itemsep}{3pt}
+      \item 基于短时能量的自动端点检测
+      \item 完整 MFCC 特征提取流程
+      \item 传统方法：KNN 基线 + GMM 序列模型
+      \item 深度方法：TinyKeywordCNN
+      \item 7 级 SNR 混合噪声鲁棒性评估
     \end{itemize}
 
-    \medskip
-    \textbf{核心结论}
+    \column{0.51\textwidth}
+    \textbf{\large 核心结论}
+    \vspace{2pt}
     \begin{enumerate}
-      \item 基于傅里叶分析的 MFCC 特征对数字语音有良好区分度
-      \item 动态特征（$\Delta$, $\Delta^2$）显著提升识别性能
-      \item 小样本场景下 GMM 优于 CNN；噪声增强改善低 SNR 鲁棒性
+      \setlength{\itemsep}{3pt}
+      \item MFCC 对孤立数字语音具有良好区分度
+      \item GMM 在纯净语音与中高 SNR 下表现最好
+      \item CNN 在低 SNR 下受益于数据增强，但单次测试统计意义有限
     \end{enumerate}
 
-    \column{0.46\textwidth}
-    \textbf{局限性}
+    \vspace{5pt}
+    \textbf{\large 局限性}
+    \vspace{2pt}
     \begin{itemize}
-      \item 验证集仅 20 样本，统计意义有限
-      \item 单一混合噪声类型，未测试白噪声/粉红噪声等单独类型
+      \setlength{\itemsep}{2pt}
+      \item 验证集仅 20 条，统计意义有限
+      \item 仅测试统一混合噪声，未拆分单类噪声影响
       \item 未进行说话人交叉验证
-      \item 深度学习未尝试更先进架构（残差、注意力等）
     \end{itemize}
-
-    \medskip
-    \textbf{团队分工}
-    \begin{itemize}
-      \item [成员 A] 传统方法实现（KNN, GMM）、噪声鲁棒性测试
-      \item [成员 B] 深度方法实现（CNN）、模型训练与调优
-      \item [成员 C] 数据分析与可视化、汇报材料制作
-    \end{itemize}
-
-    \medskip
-    {\footnotesize
-    \textbf{参考文献}
-    [1] Sainath \& Parada. CNN for Small-footprint KWS. \emph{Interspeech}, 2015.
-    [2] Kim et al. Broadcasted Residual Learning for Efficient KWS. \emph{arXiv:2106.04140}.
-    }
   \end{columns}
 \end{frame}

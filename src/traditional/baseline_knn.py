@@ -240,32 +240,47 @@ def load_dataset(metadata_path):
 
 def plot_confusion_matrix(cm, output_path):
     """
-    Plot confusion matrix with matplotlib.
+    Plot confusion matrix with a clean blue-white style for slides.
     """
-    plt.figure(figsize=(7, 6))
-    plt.imshow(cm, interpolation="nearest")
-    plt.title("Clean Confusion Matrix (MFCC-stat + KNN)")
-    plt.xlabel("Predicted Label")
-    plt.ylabel("True Label")
+    fig, ax = plt.subplots(figsize=(6.2, 5.4))
 
-    plt.xticks(TARGET_LABELS)
-    plt.yticks(TARGET_LABELS)
+    im = ax.imshow(
+        cm,
+        interpolation="nearest",
+        cmap="Blues",
+        vmin=0,
+        vmax=max(1, cm.max()),
+    )
 
-    plt.colorbar(label="Count")
+    ax.set_title("Clean Confusion Matrix (MFCC-stat + KNN)", fontsize=11, pad=10)
+    ax.set_xlabel("Predicted Label", fontsize=10)
+    ax.set_ylabel("True Label", fontsize=10)
 
+    ax.set_xticks(TARGET_LABELS)
+    ax.set_yticks(TARGET_LABELS)
+    ax.tick_params(axis="both", labelsize=9)
+
+    cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    cbar.set_label("Count", fontsize=9)
+    cbar.ax.tick_params(labelsize=8)
+
+    threshold = cm.max() / 2.0 if cm.max() > 0 else 0.5
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
-            plt.text(
+            value = cm[i, j]
+            ax.text(
                 j,
                 i,
-                str(cm[i, j]),
+                str(value),
                 ha="center",
                 va="center",
+                fontsize=8,
+                color="white" if value > threshold else "black",
             )
 
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=200)
-    plt.close()
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
 
 
 def train_and_evaluate(X, y, info):
