@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import signal
 
-from .config import DEFAULT_DATA_DIR, FeatureConfig
+from .config import FeatureConfig
 from .features import (
     log_mel_matrix,
     mfcc_spectrogram,
@@ -90,7 +90,7 @@ def _save_feature_map(features: np.ndarray, path: Path, title: str, ylabel: str)
 
 
 def run_signal_analysis(
-    reference_dir: str | Path = DEFAULT_DATA_DIR,
+    reference_dir: str | Path = "reference",
     output_dir: str | Path = "outputs/deep_learning/signal_analysis",
     speaker_id: int = 1,
     digit: int = 0,
@@ -154,7 +154,7 @@ def run_signal_analysis(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Create signal-analysis figures for one digit utterance.")
-    parser.add_argument("--reference-dir", default=DEFAULT_DATA_DIR)
+    parser.add_argument("--reference-dir", default="reference")
     parser.add_argument("--output-dir", default="outputs/deep_learning/signal_analysis")
     parser.add_argument("--speaker-id", type=int, default=1)
     parser.add_argument("--digit", type=int, default=0)

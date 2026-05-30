@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from .config import DEFAULT_DATA_DIR, DEFAULT_NOISE_PATH, FeatureConfig, TRAIN_SPEAKERS, VAL_SPEAKERS
+from .config import FeatureConfig, TRAIN_SPEAKERS, TrainConfig, VAL_SPEAKERS
 from .features import (
     add_noise_at_snr,
     extract_features,
@@ -23,14 +23,15 @@ from .segment import DigitSample, load_digit_samples
 class DigitSpeechDataset(Dataset):
     def __init__(
         self,
-        reference_dir: str | Path = DEFAULT_DATA_DIR,
+        reference_dir: str | Path = "reference",
         speaker_ids: Sequence[int] = TRAIN_SPEAKERS,
         feature_config: FeatureConfig | None = None,
         samples: Sequence[DigitSample] | None = None,
         training: bool = False,
         seed: int = 42,
-        noise_path: str | Path | None = DEFAULT_NOISE_PATH,
+        noise_path: str | Path | None = "reference/mixed_noise.wav",
         noise_prob: float = 0.0,
+        train_noise_kinds: Sequence[str] = ("mixed",),
         noise_snr_range: tuple[float, float] = (0.0, 20.0),
         gain_db: float = 0.0,
         time_shift_ms: float = 0.0,
@@ -41,6 +42,7 @@ class DigitSpeechDataset(Dataset):
         self.training = training
         self.rng = np.random.default_rng(seed)
         self.noise_prob = noise_prob
+        self.train_noise_kinds = tuple(train_noise_kinds) or ("mixed",)
         self.noise_snr_range = noise_snr_range
         self.gain_db = gain_db
         self.time_shift_ms = time_shift_ms
@@ -89,7 +91,8 @@ class DigitSpeechDataset(Dataset):
 
         if self.noise_prob > 0 and self.rng.random() < self.noise_prob:
             snr = float(self.rng.uniform(self.noise_snr_range[0], self.noise_snr_range[1]))
-            audio = self._apply_fixed_noise(audio, "mixed", snr)
+            kind = str(self.rng.choice(self.train_noise_kinds))
+            audio = self._apply_fixed_noise(audio, kind, snr)
 
         return normalize_audio(audio)
 
@@ -116,13 +119,14 @@ def _time_shift(audio: np.ndarray, shift: int) -> np.ndarray:
 
 
 def build_train_val_datasets(
-    reference_dir: str | Path = DEFAULT_DATA_DIR,
+    reference_dir: str | Path = "reference",
     feature_config: FeatureConfig | None = None,
     seed: int = 42,
-    noise_path: str | Path | None = DEFAULT_NOISE_PATH,
-    noise_prob: float = 0.30,
-    gain_db: float = 6.0,
-    time_shift_ms: float = 120.0,
+    noise_path: str | Path | None = "reference/mixed_noise.wav",
+    noise_prob: float = TrainConfig.noise_prob,
+    train_noise_kinds: Sequence[str] = TrainConfig.train_noise_kinds,
+    gain_db: float = TrainConfig.gain_db,
+    time_shift_ms: float = TrainConfig.time_shift_ms,
 ) -> tuple[DigitSpeechDataset, DigitSpeechDataset]:
     feature_config = feature_config or FeatureConfig()
     train_ds = DigitSpeechDataset(
@@ -133,6 +137,7 @@ def build_train_val_datasets(
         seed=seed,
         noise_path=noise_path,
         noise_prob=noise_prob,
+        train_noise_kinds=train_noise_kinds,
         noise_snr_range=(0.0, 20.0),
         gain_db=gain_db,
         time_shift_ms=time_shift_ms,

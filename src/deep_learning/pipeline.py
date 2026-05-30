@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from .config import DEFAULT_DATA_DIR, DEFAULT_NOISE_PATH, FeatureConfig, SNR_LEVELS, TrainConfig
+from .config import FeatureConfig, SNR_LEVELS, TrainConfig
 
 
 def _run(args: list[str]) -> None:
@@ -17,15 +17,19 @@ def _run(args: list[str]) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run analysis, training, clean eval, and SNR noise eval.")
-    parser.add_argument("--reference-dir", default=DEFAULT_DATA_DIR)
+    parser.add_argument("--reference-dir", default="reference")
     parser.add_argument("--output-dir", default="outputs/deep_learning")
     parser.add_argument("--checkpoint", default=None)
-    parser.add_argument("--noise-path", default=DEFAULT_NOISE_PATH)
+    parser.add_argument("--noise-path", default="reference/mixed_noise.wav")
     parser.add_argument("--device", default="auto")
     parser.add_argument("--epochs", type=int, default=TrainConfig.epochs)
     parser.add_argument("--patience", type=int, default=TrainConfig.patience)
     parser.add_argument("--batch-size", type=int, default=TrainConfig.batch_size)
     parser.add_argument("--seed", type=int, default=TrainConfig.seed)
+    parser.add_argument("--noise-prob", type=float, default=TrainConfig.noise_prob)
+    parser.add_argument("--train-noise-kinds", nargs="+", default=list(TrainConfig.train_noise_kinds))
+    parser.add_argument("--gain-db", type=float, default=TrainConfig.gain_db)
+    parser.add_argument("--time-shift-ms", type=float, default=TrainConfig.time_shift_ms)
     parser.add_argument("--feature-kind", choices=["mfcc", "log_mel"], default=FeatureConfig.feature_kind)
     parser.add_argument("--denoise", choices=["none", "notch", "spectral", "notch_spectral"], default=FeatureConfig.denoise)
     parser.add_argument("--n-mels", type=int, default=FeatureConfig.n_mels)
@@ -33,7 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--speaker-id", type=int, default=1)
     parser.add_argument("--digit", type=int, default=0)
     parser.add_argument("--noise-kinds", nargs="+", default=["mixed"])
-    parser.add_argument("--snr", nargs="+", type=int, default=list(SNR_LEVELS))
+    parser.add_argument("--snr", nargs="+", type=float, default=list(SNR_LEVELS))
     parser.add_argument("--skip-training", action="store_true")
     return parser.parse_args()
 
@@ -97,6 +101,14 @@ def main() -> None:
                 str(args.batch_size),
                 "--seed",
                 str(args.seed),
+                "--noise-prob",
+                str(args.noise_prob),
+                "--train-noise-kinds",
+                *args.train_noise_kinds,
+                "--gain-db",
+                str(args.gain_db),
+                "--time-shift-ms",
+                str(args.time_shift_ms),
                 *common_feature_args,
             ]
         )
