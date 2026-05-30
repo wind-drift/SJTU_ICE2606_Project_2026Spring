@@ -33,3 +33,22 @@ checkpoints/
 
 # Generated result files
 outputs/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.nav
+*.out
+*.run.xml
+*.snm
+*.toc
+*.synctex.gz
+*.vrb
+*.xdv
+_slides/
+_minted-*/

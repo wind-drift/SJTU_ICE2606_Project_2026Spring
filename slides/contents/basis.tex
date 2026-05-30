@@ -5,51 +5,62 @@
 
 \begin{frame}{信号分析：时域、频域与时频表示}
   \begin{columns}[T]
-    \column{0.48\textwidth}
+    \column{0.50\textwidth}
     \centering
-    \includegraphics[width=0.80\textwidth]{waveform.png}\\[-6pt]
-    {\footnotesize (a) 时域波形}
+    \includegraphics[width=0.72\textwidth]{waveform.png}\\[-5pt]
+    {\footnotesize (a) 时域波形：幅值随时间变化}
 
     \vspace{4pt}
-    \includegraphics[width=0.80\textwidth]{fft_spectrum.png}\\[-6pt]
-    {\footnotesize (b) FFT 幅度谱（0--4000 Hz）}
+    \includegraphics[width=0.72\textwidth]{fft_spectrum.png}\\[-5pt]
+    {\footnotesize (b) FFT 幅度谱：频率能量分布}
 
-    \column{0.48\textwidth}
+    \column{0.46\textwidth}
     \centering
-    \includegraphics[width=0.80\textwidth]{spectrogram.png}\\[-6pt]
-    {\footnotesize (c) STFT 语谱图}
+    \includegraphics[width=0.74\textwidth]{spectrogram.png}\\[-5pt]
+    {\footnotesize (c) STFT 语谱图：时频联合表示}
 
-    \medskip
-    \raggedright\small
-    语音是非平稳信号，单一 FFT 丢失频率随时间变化的信息。STFT 通过分帧加窗实现时频联合分析：
+    \vspace{4pt}
+    \raggedright\footnotesize
+    \begin{itemize}
+      \setlength{\itemsep}{1pt}
+      \item 语音是非平稳信号，频谱会随时间变化
+      \item STFT 通过分帧加窗保留局部频率信息
+    \end{itemize}
+
+    \vspace{-4pt}
+    {\scriptsize
     \[
-    \operatorname{STFT}\{x[n]\}(m,\omega) = \sum_{n=-\infty}^{\infty} x[n] w[n-mR] e^{-j\omega n}
+      \operatorname{STFT}\{x[n]\}(m,\omega)
+      = \sum_n x[n]w[n-mR]e^{-j\omega n}
     \]
-    {\footnotesize 25 ms Hamming 窗，10 ms 帧移}
+    }
+    \vspace{-8pt}
+    {\scriptsize 本实验采用 25 ms Hamming 窗，10 ms 帧移。}
   \end{columns}
 \end{frame}
 
 \begin{frame}{MFCC 特征提取流程}
   \small
   \begin{columns}[T]
-    \column{0.50\textwidth}
+    \column{0.54\textwidth}
     \textbf{梅尔频率倒谱系数（MFCC）}
     \begin{enumerate}
       \setlength{\itemsep}{1pt}
-      \item \textbf{预加重}：$y[n] = x[n] - 0.97 x[n-1]$（FIR 高通）
+      \item \textbf{预加重}：$y[n]=x[n]-0.97x[n-1]$
       \item \textbf{分帧加窗}：25 ms Hamming 窗，10 ms 帧移
-      \item \textbf{FFT $\to$ 功率谱 $\to$ Mel 滤波}：26 个三角滤波器（低频密、高频疏）
-      \item \textbf{取对数 + DCT}：压缩动态范围，去相关，取前 13 维
-      \item \textbf{动态特征}：$\Delta$ 和 $\Delta^2$（一阶/二阶差分）$\to$ 39 维
+      \item \textbf{FFT $\to$ 功率谱}：获得短时频谱能量
+      \item \textbf{Mel 滤波}：模拟人耳非线性频率感知
+      \item \textbf{Log + DCT}：压缩动态范围并去相关
+      \item \textbf{动态特征}：加入 $\Delta,\Delta^2$，形成 39 维特征
     \end{enumerate}
 
-    \column{0.46\textwidth}
+    \column{0.42\textwidth}
     \centering
-    \includegraphics[width=0.80\textwidth]{mfcc.png}\\[-4pt]
-    {\footnotesize 13 维 MFCC（传统方法）}
+    \includegraphics[width=0.76\textwidth]{mfcc.png}\\[-4pt]
+    {\scriptsize 13 维 MFCC 特征图}
 
-    \vspace{8pt}
-    \includegraphics[width=0.80\textwidth]{mfcc_features.png}\\[-4pt]
-    {\footnotesize 39 维 MFCC + $\Delta$ + $\Delta^2$（深度方法）}
+    \vspace{4pt}
+    \includegraphics[width=0.76\textwidth]{mfcc_features.png}\\[-4pt]
+    {\scriptsize 39 维 MFCC / $\Delta$ / $\Delta^2$ 特征图}
   \end{columns}
 \end{frame}
