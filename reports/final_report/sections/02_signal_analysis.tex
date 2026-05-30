@@ -1,0 +1,41 @@
+\section{语音信号分析}
+
+\subsection{时域波形}
+
+语音信号在时域中表现为幅度随时间变化的离散序列。时域波形可以反映语音的能量包络、发音起止位置以及静音段分布，因此可用于端点检测。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\linewidth]{signal_time_waveform.png}
+  \caption{语音信号时域波形}
+\end{figure}
+
+\subsection{频域分析}
+
+对离散语音信号作快速傅里叶变换（FFT），可得到其整体频率能量分布。离散傅里叶变换定义为
+\begin{equation}
+  X[k] = \sum_{n=0}^{N-1} x[n] e^{-j2\pi kn/N}.
+\end{equation}
+
+频谱图能够反映语音信号的主要频率成分和共振峰分布，但由于语音信号是典型非平稳信号，整体 FFT 无法表示频谱随时间的动态变化。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\linewidth]{signal_fft.png}
+  \caption{语音信号 FFT 幅度谱}
+\end{figure}
+
+\subsection{短时傅里叶变换与语谱图}
+
+为分析语音信号的时变频谱特性，实验采用短时傅里叶变换（STFT）。其基本思想是对信号进行分帧和加窗，在每一短时帧内近似认为信号平稳，再分别进行傅里叶变换：
+\begin{equation}
+  X(m,k)=\sum_{n=0}^{N-1} x[n]w[n-m]e^{-j2\pi kn/N}.
+\end{equation}
+
+本实验采用 25 ms Hamming 窗和 10 ms 帧移。语谱图横轴为时间，纵轴为频率，颜色表示能量强弱，可以同时展示语音的时间、频率和能量变化。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\linewidth]{signal_stft.png}
+  \caption{语音信号 STFT 语谱图}
+\end{figure}

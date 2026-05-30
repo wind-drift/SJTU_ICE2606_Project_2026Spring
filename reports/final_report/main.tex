@@ -1,0 +1,154 @@
+% !TeX program = xelatex
+% !TeX encoding = UTF-8
+
+\documentclass[UTF8,a4paper,zihao=-4]{ctexart}
+
+% =========================================================
+% 页面设置
+% =========================================================
+\usepackage{geometry}
+\geometry{
+  left=2.6cm,
+  right=2.6cm,
+  top=2.8cm,
+  bottom=2.8cm
+}
+
+\usepackage{setspace}
+\onehalfspacing
+
+\usepackage{indentfirst}
+\setlength{\parindent}{2em}
+
+% =========================================================
+% 数学与符号
+% =========================================================
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
+
+% =========================================================
+% 图表
+% =========================================================
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+
+% 图片路径
+\graphicspath{{figures/}}
+
+% =========================================================
+% 单位与数字
+% =========================================================
+\usepackage{siunitx}
+\sisetup{
+  detect-all,
+  separate-uncertainty = true
+}
+
+% =========================================================
+% 列表与代码
+% =========================================================
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible,
+  numbers=left,
+  numberstyle=\tiny,
+  keywordstyle=\bfseries,
+  commentstyle=\itshape,
+  showstringspaces=false
+}
+
+% =========================================================
+% 超链接
+% =========================================================
+\usepackage[
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue
+]{hyperref}
+
+% =========================================================
+% 参考文献
+% =========================================================
+\usepackage[backend=biber,style=gb7714-2015]{biblatex}
+\addbibresource{refs/references.bib}
+
+% =========================================================
+% 标题格式
+% =========================================================
+\ctexset{
+  section = {
+    format = \Large\bfseries,
+    name = {,、},
+    number = \chinese{section}
+  },
+  subsection = {
+    format = \large\bfseries
+  },
+  subsubsection = {
+    format = \normalsize\bfseries
+  }
+}
+
+% =========================================================
+% 自定义命令
+% =========================================================
+\newcommand{\snr}{\mathrm{SNR}}
+\newcommand{\mfcc}{\mathrm{MFCC}}
+\newcommand{\stft}{\mathrm{STFT}}
+\newcommand{\fft}{\mathrm{FFT}}
+
+% =========================================================
+% 文档信息
+% =========================================================
+\title{\heiti 基于信号处理的孤立数字语音识别实验报告}
+
+\author{
+  于沛龙 \quad 景序 \quad 封宇凡 \quad 孟德轩
+}
+
+\date{2026年5月}
+
+% =========================================================
+% 正文
+% =========================================================
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\input{sections/00_abstract}
+\end{abstract}
+
+\noindent\textbf{关键词：}
+孤立词语音识别；MFCC；KNN；GMM；CNN；噪声鲁棒性；信号与系统
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\input{sections/01_intro_dataset}
+\input{sections/02_signal_analysis}
+\input{sections/03_feature_extraction}
+\input{sections/04_methods}
+\input{sections/05_results_noise}
+\input{sections/06_discussion_conclusion}
+\input{sections/07_contribution}
+
+\newpage
+\printbibliography
+
+\end{document}
