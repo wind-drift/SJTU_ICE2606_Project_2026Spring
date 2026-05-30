@@ -6,26 +6,25 @@
 \begin{frame}{任务背景与数据集}
   \small
   \begin{columns}[T]
-    \column{0.50\textwidth}
+    \column{0.60\textwidth}
     \textbf{任务目标}
     \begin{itemize}
       \setlength{\itemsep}{1pt}
-      \item 识别孤立数字语音（0--9）
-      \item 提取 MFCC 特征并完成分类
-      \item 比较传统方法与深度学习方法
-      \item 测试混合噪声下的鲁棒性
+      \item 面向 0–9 孤立数字语音，完成从信号分析到分类识别的完整流程
+      \item 提取 MFCC 及动态特征，比较传统与深度学习方法
+      \item 在混合噪声下测试模型鲁棒性，分析准确率随 SNR 的变化
     \end{itemize}
 
-    \vspace{3pt}
+    \vspace{1pt}
     \textbf{数据集}
     \begin{itemize}
       \setlength{\itemsep}{1pt}
-      \item 7 位说话人，每人朗读 0--9
-      \item 16 kHz，单声道 MP3
-      \item 短时能量端点检测自动切分
+      \item 数据：7 位说话人，每人朗读 0–9，共 70 段语音
+      \item 采样率：16 kHz，单声道 MP3
+      \item 预处理：基于短时能量进行端点检测并自动切分
     \end{itemize}
 
-    \column{0.46\textwidth}
+    \column{0.40\textwidth}
     \textbf{数据划分}
     \vspace{-2pt}
     \begin{table}
@@ -45,10 +44,9 @@
     \textbf{评估设置}
     \begin{itemize}
       \setlength{\itemsep}{1pt}
-      \item 纯净语音：准确率 + 混淆矩阵
-      \item 带噪语音：7 级 SNR 鲁棒性
-      \item SNR：$-10,-5,0,5,10,15,20$ dB
-      \item 噪声：白噪声 + 1/f 噪声 + 50 Hz 工频
+      \item 无噪声：准确率 + 混淆矩阵
+      \item 带噪声：-10, -5, 0, 5, 10, 15, 20 dB 七级 SNR
+      \item 噪声：白噪声 + 1/f 噪声 + 50 Hz 工频干扰
     \end{itemize}
   \end{columns}
 \end{frame}
