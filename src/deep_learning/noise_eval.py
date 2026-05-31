@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 from torch.utils.data import DataLoader
 
-from .config import DEFAULT_DATA_DIR, DEFAULT_NOISE_PATH, SNR_LEVELS, VAL_SPEAKERS
+from .config import SNR_LEVELS, VAL_SPEAKERS
 from .dataset import DigitSpeechDataset
 from .evaluate import load_checkpoint_model, predict
 from .metrics import accuracy, save_accuracy_curve, save_json, save_rows_csv
@@ -23,11 +23,11 @@ def _device(name: str) -> torch.device:
 
 def run_noise_evaluation(
     checkpoint_path: str | Path = "outputs/deep_learning/tiny_cnn.pt",
-    reference_dir: str | Path = DEFAULT_DATA_DIR,
+    reference_dir: str | Path = "reference",
     output_dir: str | Path = "outputs/deep_learning",
-    noise_path: str | Path | None = DEFAULT_NOISE_PATH,
+    noise_path: str | Path | None = "reference/mixed_noise.wav",
     noise_kinds: tuple[str, ...] = ("mixed",),
-    snr_levels: tuple[int, ...] = SNR_LEVELS,
+    snr_levels: tuple[float, ...] = SNR_LEVELS,
     batch_size: int = 16,
     seed: int = 42,
     device_name: str = "auto",
@@ -64,11 +64,11 @@ def run_noise_evaluation(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate noise robustness for TinyKeywordCNN.")
     parser.add_argument("--checkpoint", default="outputs/deep_learning/tiny_cnn.pt")
-    parser.add_argument("--reference-dir", default=DEFAULT_DATA_DIR)
+    parser.add_argument("--reference-dir", default="reference")
     parser.add_argument("--output-dir", default="outputs/deep_learning")
-    parser.add_argument("--noise-path", default=DEFAULT_NOISE_PATH)
+    parser.add_argument("--noise-path", default="reference/mixed_noise.wav")
     parser.add_argument("--noise-kinds", nargs="+", default=["mixed"])
-    parser.add_argument("--snr", nargs="+", type=int, default=list(SNR_LEVELS))
+    parser.add_argument("--snr", nargs="+", type=float, default=list(SNR_LEVELS))
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default="auto")

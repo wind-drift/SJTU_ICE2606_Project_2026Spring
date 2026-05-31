@@ -10,7 +10,7 @@ from typing import Sequence
 
 import numpy as np
 
-from .config import DEFAULT_DATA_DIR, DIGIT_LABELS, FeatureConfig, TRAIN_SPEAKERS, VAL_SPEAKERS
+from .config import DIGIT_LABELS, FeatureConfig, TRAIN_SPEAKERS, VAL_SPEAKERS
 from .features import load_audio, resolve_speaker_files, speaker_id_from_path
 
 
@@ -197,7 +197,7 @@ def split_speaker_file(
 
 
 def load_digit_samples(
-    reference_dir: str | Path = DEFAULT_DATA_DIR,
+    reference_dir: str | Path = "reference",
     speaker_ids: Sequence[int] = TRAIN_SPEAKERS + VAL_SPEAKERS,
     config: FeatureConfig | None = None,
 ) -> list[DigitSample]:
@@ -220,7 +220,7 @@ def write_manifest(samples: Sequence[DigitSample], path: str | Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Inspect energy-based digit segmentation.")
-    parser.add_argument("--reference-dir", default=DEFAULT_DATA_DIR)
+    parser.add_argument("--reference-dir", default="reference")
     parser.add_argument("--output", default="outputs/deep_learning/segments_manifest.json")
     parser.add_argument(
         "--speaker-ids",

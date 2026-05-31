@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 from torch.utils.data import DataLoader
 
-from .config import DEFAULT_DATA_DIR, FeatureConfig, VAL_SPEAKERS
+from .config import FeatureConfig, VAL_SPEAKERS
 from .dataset import DigitSpeechDataset
 from .metrics import (
     accuracy,
@@ -47,7 +47,7 @@ def predict(model: torch.nn.Module, loader: DataLoader, device: torch.device) ->
 
 def evaluate_clean(
     checkpoint_path: str | Path = "outputs/deep_learning/tiny_cnn.pt",
-    reference_dir: str | Path = DEFAULT_DATA_DIR,
+    reference_dir: str | Path = "reference",
     output_dir: str | Path = "outputs/deep_learning",
     batch_size: int = 16,
     device_name: str = "auto",
@@ -84,7 +84,7 @@ def evaluate_clean(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate TinyKeywordCNN on clean validation speakers.")
     parser.add_argument("--checkpoint", default="outputs/deep_learning/tiny_cnn.pt")
-    parser.add_argument("--reference-dir", default=DEFAULT_DATA_DIR)
+    parser.add_argument("--reference-dir", default="reference")
     parser.add_argument("--output-dir", default="outputs/deep_learning")
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--device", default="auto")
