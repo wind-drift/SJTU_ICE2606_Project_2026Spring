@@ -17,7 +17,7 @@
       \midrule
       MFCC-stat + KNN   & 26 维 & 80.0\% \\
       MFCC+$\Delta$/$\Delta^2$+GMM & 39 维 & 100.0\% \\
-      TinyKeywordCNN (102k) & 39 维 & 95.0\% \\
+      TinyKeywordCNN (102k) & 39 维 & 100.0\% \\
       \bottomrule
     \end{tabular}
 
@@ -26,7 +26,7 @@
     \begin{itemize}
       \setlength{\itemsep}{2pt}
       \item GMM：20 条验证样本全部识别正确
-      \item CNN：1 个误判（$2 \rightarrow 6$）
+      \item CNN：20 条验证样本全部识别正确
       \item KNN：4 个混淆，说明统计特征丢失了部分时序信息
     \end{itemize}
 
@@ -36,7 +36,8 @@
       \setlength{\itemsep}{4pt}
       \item KNN 简单可解释，但均值/标准差统计池化会丢失帧级时间顺序
       \item GMM 保留变长帧序列信息，更适合建模语音的动态变化
-      \item CNN 利用 MFCC 特征图进行卷积分类，具有较强表示能力；但验证集较小，结果仍需结合噪声测试进一步判断
+      \item CNN 利用 MFCC 特征图进行卷积分类，具有较强表示能力
+      \item 但验证集较小，结果仍需结合噪声测试进一步判断
     \end{itemize}
   \end{columns}
 \end{frame}
@@ -82,15 +83,15 @@
   \begin{columns}[T]
     \column{0.62\textwidth}
     \centering
-    \includegraphics[width=0.95\textwidth]{../outputs/deep_learning/accuracy_snr_curve.png}
+    \includegraphics[width=0.95\textwidth]{../results/deep_learning/figures/accuracy_snr_curve.png}
 
     \column{0.34\textwidth}
     \textbf{MFCC 特征图 + CNN}
     \begin{itemize}
       \setlength{\itemsep}{4pt}
+      \item 在任务要求七级 SNR 基础上，额外采用更密集的 sweep（-10 至 30 dB，步长 2.5 dB），用于观察完整趋势
       \item 训练中加入增益、平移和随机噪声增强
-      \item 低 SNR 下下降较缓，但单次测试统计意义有限
-      \item CNN 为单次测试，因此主要用于观察趋势，不与 KNN/GMM 的均值曲线作严格统计比较
+      \item 低 SNR 下性能有所下降，但仍保留有效识别能力；中高 SNR 下准确率快速恢复
     \end{itemize}
   \end{columns}
 \end{frame}
@@ -106,7 +107,7 @@
       \item MFCC 能有效刻画孤立数字语音的谱包络差异，是本任务的关键声学特征。在混合噪声测试中，各模型准确率整体随 SNR 提升而改善。
       \item KNN 基线简单可解释，但均值/标准差统计池化会丢失帧级时序信息，鲁棒性较弱。
       \item GMM 保留变长帧序列特征，在纯净语音和中高 SNR 下表现最稳定；20 dB 时准确率达到 91.25\%。
-      \item TinyKeywordCNN 受益于数据增强，在低 SNR 下仍有一定识别能力，但单次测试统计意义有限。
+      \item TinyKeywordCNN 受益于数据增强，在密集 SNR 测试中准确率随信噪比提升整体上升
     \end{enumerate}
 
     \column{0.44\textwidth}

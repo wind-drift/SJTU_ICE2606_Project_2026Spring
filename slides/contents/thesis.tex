@@ -53,13 +53,13 @@
       \item Conv2d + BatchNorm + ReLU + MaxPooling
       \item AdaptiveAvgPool(2,2) + Dropout(0.3) + Linear $\to$ 10
       \item 总参数量：\alert{102,522}
-      \item 训练：AdamW（lr=0.001），含数据增强，早停 patience=30
+      \item 训练：AdamW（lr=0.001），含增益、平移与随机噪声增强
     \end{itemize}
 
     \column{0.44\textwidth}
     \centering
-    \includegraphics[width=0.88\textwidth]{../outputs/deep_learning/clean_confusion_matrix.png}\\[-4pt]
-    {\footnotesize 纯净语音混淆矩阵（准确率 \alert{95.0\%}，19/20） 1 个错误：数字 2 误判为 6}
+    \includegraphics[width=0.88\textwidth]{../results/deep_learning/figures/clean_confusion_matrix.png}\\[-4pt]
+    {\footnotesize 纯净语音混淆矩阵（准确率 \alert{100.0\%}，20/20） 20 条验证样本全部识别正确}
 
   \end{columns}
 \end{frame}
