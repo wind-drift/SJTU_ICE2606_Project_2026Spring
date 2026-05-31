@@ -1,0 +1,79 @@
+\section{实验结果与噪声鲁棒性分析}
+
+\subsection{MFCC 统计特征 + KNN 结果}
+
+% TODO: baseline KNN results part
+
+\subsection{MFCC 动态序列特征 + GMM 结果}
+
+\subsubsection{纯净语音条件下的识别结果}
+
+在纯净语音（clean）条件下，使用 speaker1--speaker5（共 50 个样本）训练，
+speaker6--speaker7（共 20 个样本）验证，
+Advanced GMM 方法取得了 \textbf{100\%} 的识别准确率，
+即 20 个验证样本全部正确分类。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.65\linewidth]{confusion_gmm_clean.png}
+  \caption{Advanced GMM 在纯净语音条件下的混淆矩阵}
+  \label{fig:confusion_gmm_clean}
+\end{figure}
+
+图~\ref{fig:confusion_gmm_clean} 给出了对应的混淆矩阵。
+可以看出，所有数字类别的 $F_1$ 分数、精确率和召回率均为 1.0000，
+验证集上未出现任何误识别。与 baseline KNN 在同样条件下的 80\% 准确率相比，
+Advanced GMM 的识别性能有显著提升，
+说明保留时序信息和使用概率生成模型对数字语音识别是有效的。
+
+\subsubsection{噪声鲁棒性测试}
+
+为评估方法对噪声的鲁棒性，使用混合噪声（白噪声 $+$ 粉红噪声 $+$ \qty{50}{Hz} 工频干扰）
+在 \qty{-10}{dB} 至 \qty{20}{dB} 七个 SNR 等级下进行重复加噪测试。
+每个 SNR 等级重复 20 次，每次从噪声文件中随机截取片段与验证集语音混合，
+以排除单次噪声抽样的偶然性。
+最终统计各 SNR 下的平均准确率与标准差。
+
+\begin{table}[H]
+  \centering
+  \caption{Advanced GMM 在不同 SNR 下的噪声鲁棒性结果（20 次重复）}
+  \label{tab:snr_gmm}
+  \begin{tabular}{@{}ccc@{}}
+    \toprule
+    SNR (dB) & 平均准确率 & 标准差 \\
+    \midrule
+    $-10$ & 0.1000 & $1.39 \times 10^{-17}$ \\
+    $-5$  & 0.1575 & 0.0426 \\
+    $0$   & 0.3800 & 0.0731 \\
+    $5$   & 0.5575 & 0.0729 \\
+    $10$  & 0.7250 & 0.0433 \\
+    $15$  & 0.8525 & 0.0460 \\
+    $20$  & 0.9125 & 0.0311 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\linewidth]{snr_gmm_mean_std.png}
+  \caption{Advanced GMM 在不同 SNR 下的准确率变化曲线（误差线：$\pm 1\sigma$）}
+  \label{fig:snr_gmm}
+\end{figure}
+
+表~\ref{tab:snr_gmm} 和图~\ref{fig:snr_gmm} 共同展示了噪声鲁棒性测试结果。
+可以看出：
+\begin{enumerate}[label=(\arabic*)]
+  \item 随 SNR 从 \qty{-10}{dB} 上升至 \qty{20}{dB}，
+        平均准确率从 0.1000 单调上升至 0.9125，呈现清晰的 SNR-性能正相关趋势；
+  \item 在 \qty{20}{dB} 高 SNR 条件下，平均准确率达到 0.9125，
+        已接近纯净条件下的 1.0000，说明该方法对低强度噪声具有一定容忍度；
+  \item 在 \qty{0}{dB} 及以上 SNR 条件下，准确率恢复至 0.38 以上且稳定提升，
+        而在 \qty{-5}{dB} 和 \qty{-10}{dB} 极端低 SNR 下准确率接近随机水平（0.10）；
+  \item 标准差随 SNR 提升整体呈下降趋势，表明高 SNR 下结果更加稳定。
+\end{enumerate}
+
+% --- End of GMM results subsection ---
+
+\subsection{CNN 方法结果}
+
+% TODO: CNN results part

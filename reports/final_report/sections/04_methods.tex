@@ -1,0 +1,113 @@
+\section{分类方法}
+
+\subsection{MFCC 统计特征 + KNN（Baseline）}
+
+% TODO: baseline KNN method part
+
+\subsection{MFCC 动态序列特征 + GMM}
+
+针对 baseline 方法中``均值/方差''统计压缩丢失时序信息的问题，
+本方法保留了语音的帧级时序结构，将每段语音建模为变长特征序列
+$\{\mathbf{x}_1, \mathbf{x}_2, \ldots, \mathbf{x}_T\}$，其中
+$\mathbf{x}_t \in \mathbb{R}^{39}$，$T$ 为帧数。
+在此基础上，采用高斯混合模型（Gaussian Mixture Model, GMM）
+作为分类器，从概率密度建模的角度直接处理变长序列。
+
+\subsubsection{39 维动态特征提取}
+
+仅使用 13 维静态 MFCC 只能描述当前帧的瞬时频谱包络，无法刻画语音信号的动态变化趋势。
+为此，在静态 MFCC 的基础上引入一阶差分（$\Delta$）和二阶差分（$\Delta^2$）系数。
+
+一阶差分 $\Delta$ 通过线性回归计算第 $t$ 帧附近 $N$ 帧窗口内的斜率，近似该帧处特征的一阶时间导数：
+
+\begin{equation}
+  \Delta_t = \frac{\sum_{i=1}^{N} i \cdot (\mathbf{c}_{t+i} - \mathbf{c}_{t-i})}{2 \sum_{i=1}^{N} i^2}
+\end{equation}
+
+其中 $\mathbf{c}_t$ 为第 $t$ 帧的 13 维 MFCC 向量，$N = 2$ 为上下文窗口宽度。
+该公式对窗口内每条差分给予与距离成正比的权重，距离越远的帧对斜率估计贡献越大。
+
+二阶差分 $\Delta^2$ 将一阶差分 $\Delta$ 再次通过同一回归公式计算得到，
+近似二阶时间导数，反映频谱变化的``加速度''。最终将三者沿特征维度拼接：
+
+\begin{equation}
+  \mathbf{x}_t = \bigl[\,\mathrm{MFCC}_t \;\big|\; \Delta_t \;\big|\; \Delta^2_t \,\bigr] \in \mathbb{R}^{39}
+\end{equation}
+
+其中 MFCC$_t$ 为 13 维静态系数，$\Delta_t$ 为 13 维一阶差分，$\Delta^2_t$ 为 13 维二阶差分。
+39 维特征同时编码了当前帧的频谱形状、变化速度和变化加速度，
+为后续 GMM 提供了更丰富的声学判别信息。
+
+\subsubsection{倒谱均值方差归一化（CMVN）}
+
+不同说话人或不同录音条件下的信道差异会使 MFCC 分布发生整体偏移和尺度变化。
+为降低此类变异对分类的影响，在提取 39 维特征后，
+对每句语音逐维度进行基于句子的均值方差归一化（Cepstral Mean and Variance Normalization, CMVN）：
+
+\begin{equation}
+  \hat{\mathbf{x}}_t^{(d)} = \frac{\mathbf{x}_t^{(d)} - \mu^{(d)}}{\sigma^{(d)} + \varepsilon},\quad
+  \mu^{(d)} = \frac{1}{T}\sum_{t=1}^{T} \mathbf{x}_t^{(d)},\quad
+  \sigma^{(d)} = \sqrt{\frac{1}{T}\sum_{t=1}^{T} (\mathbf{x}_t^{(d)} - \mu^{(d)})^2}
+\end{equation}
+
+其中 $d = 1, \ldots, 39$ 为特征维索引，$\varepsilon = 10^{-8}$ 防止除零。
+CMVN 使每维特征在句内均值为零、方差为一，有助于消除信道卷积噪声的线性滤波效应，
+并减小不同说话人之间的特征分布差异。
+
+\subsubsection{GMM 分类器}
+
+高斯混合模型将数据分布建模为 $K$ 个高斯分量的加权和。
+对于数字类别 $c \in \{0, 1, \ldots, 9\}$，独立训练一个 GMM，
+其概率密度函数为：
+
+\begin{equation}
+  p(\mathbf{x} \mid \lambda_c) = \sum_{k=1}^{K} w_{c,k} \,
+  \mathcal{N}\bigl(\mathbf{x} \mid \bm{\mu}_{c,k}, \bm{\Sigma}_{c,k}\bigr)
+\end{equation}
+
+其中 $w_{c,k}$ 为第 $k$ 个分量的混合权重（$\sum_k w_{c,k} = 1$），
+$\bm{\mu}_{c,k}$ 为均值向量，$\bm{\Sigma}_{c,k}$ 为协方差矩阵。
+本实验设定 $K = 4$ 个高斯分量，协方差类型为对角阵（\texttt{diag}），
+兼顾模型容量与参数估计稳定性。
+
+训练阶段，对每个数字类别 $c$，将该类所有训练样本的全部帧拼接为训练集
+$X_c = \{\mathbf{x}^{(1)}, \mathbf{x}^{(2)}, \ldots, \mathbf{x}^{(M_c)}\}$，
+通过期望最大化（EM）算法迭代估计 GMM 参数 $\lambda_c = \{w_{c,k}, \bm{\mu}_{c,k}, \bm{\Sigma}_{c,k}\}_{k=1}^{K}$。
+
+预测阶段，对于测试样本的特征序列 $X = \{\mathbf{x}_1, \ldots, \mathbf{x}_T\}$，
+假设各帧独立同分布，计算该序列在每个类 GMM 下的平均对数似然：
+
+\begin{equation}
+  \log p(X \mid \lambda_c) = \frac{1}{T} \sum_{t=1}^{T}
+  \log \sum_{k=1}^{K} w_{c,k} \, \mathcal{N}(\mathbf{x}_t \mid \bm{\mu}_{c,k}, \bm{\Sigma}_{c,k})
+\end{equation}
+
+取对数似然最大的类别作为预测结果：
+$\hat{y} = \arg\max_c \log p(X \mid \lambda_c)$。
+与 KNN 仅比较样本间距离不同，GMM 从概率生成模型的角度
+显式建模每类语音的帧级特征分布，能够更充分地利用时序特征的统计信息。
+
+\subsubsection{与 Baseline 方法的对比}
+
+表~\ref{tab:method_comparison} 总结了 Advanced GMM 方法与 baseline KNN 方法的主要区别。
+
+\begin{table}[H]
+  \centering
+  \caption{Baseline KNN 与 Advanced GMM 方法对比}
+  \label{tab:method_comparison}
+  \begin{tabular}{@{}p{3.2cm} p{5.5cm} p{5.5cm}@{}}
+    \toprule
+    维度 & Baseline KNN & Advanced GMM \\
+    \midrule
+    特征维度 & 13 维 MFCC & 39 维（MFCC + $\Delta$ + $\Delta^2$） \\
+    \addlinespace
+    时序处理 & 均值/方差压缩为 26 维定长向量，丢弃时序 & 保留全部帧序列 $(T, 39)$ \\
+    \addlinespace
+    归一化 & StandardScaler（全局） & CMVN（逐句均值方差归一化） \\
+    \addlinespace
+    分类器 & 1-NN（基于欧氏距离） & GMM（$K=4$，对角协方差，对数似然评分） \\
+    \addlinespace
+    决策依据 & 最近邻样本标签 & 各类别概率密度建模 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
