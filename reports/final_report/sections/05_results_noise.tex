@@ -1,44 +1,88 @@
 \section{实验结果与噪声鲁棒性分析}
 
-\subsection{MFCC 统计特征 + KNN 结果}
+本节对三种识别方法在纯净语音和混合噪声条件下的实验结果进行比较。
+纯净语音实验用于评估模型在理想条件下的基本分类能力；噪声鲁棒性实验则通过在验证集语音中叠加不同强度的混合噪声，考察识别系统在实际复杂环境下的稳定性。
 
-% TODO: baseline KNN results part
+\subsection{纯净语音识别结果}
 
-\subsection{MFCC 动态序列特征 + GMM 结果}
-
-\subsubsection{纯净语音条件下的识别结果}
-
-在纯净语音（clean）条件下，使用 speaker1--speaker5（共 50 个样本）训练，
-speaker6--speaker7（共 20 个样本）验证，
-Advanced GMM 方法取得了 \textbf{100\%} 的识别准确率，
-即 20 个验证样本全部正确分类。
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.65\linewidth]{confusion_gmm_clean.png}
-  \caption{Advanced GMM 在纯净语音条件下的混淆矩阵}
-  \label{fig:confusion_gmm_clean}
-\end{figure}
-
-图~\ref{fig:confusion_gmm_clean} 给出了对应的混淆矩阵。
-可以看出，所有数字类别的 $F_1$ 分数、精确率和召回率均为 1.0000，
-验证集上未出现任何误识别。与 baseline KNN 在同样条件下的 80\% 准确率相比，
-Advanced GMM 的识别性能有显著提升，
-说明保留时序信息和使用概率生成模型对数字语音识别是有效的。
-
-\subsubsection{噪声鲁棒性测试}
-
-为评估方法对噪声的鲁棒性，使用混合噪声（白噪声 $+$ 粉红噪声 $+$ \qty{50}{Hz} 工频干扰）
-在 \qty{-10}{dB} 至 \qty{20}{dB} 七个 SNR 等级下进行重复加噪测试。
-每个 SNR 等级重复 20 次，每次从噪声文件中随机截取片段与验证集语音混合，
-以排除单次噪声抽样的偶然性。
-最终统计各 SNR 下的平均准确率与标准差。
+在无噪声条件下，三种方法均使用 speaker 6--7 的 20 条验证语音进行测试。
+表 \ref{tab:clean-result-compare} 总结了三种方法的输入特征与识别准确率。
+其中，KNN 使用 13 维 MFCC 的均值和标准差构成 26 维统计特征；GMM 使用 39 维 MFCC + $\Delta$ + $\Delta^2$ 帧级序列特征；CNN 则将同样的 39 维动态特征组织为二维特征图进行卷积分类。
 
 \begin{table}[H]
   \centering
-  \caption{Advanced GMM 在不同 SNR 下的噪声鲁棒性结果（20 次重复）}
-  \label{tab:snr_gmm}
-  \begin{tabular}{@{}ccc@{}}
+  \caption{纯净语音条件下三种识别方法的准确率比较}
+  \label{tab:clean-result-compare}
+  \begin{tabular}{lcc}
+    \toprule
+    方法 & 输入特征 & 准确率 \\
+    \midrule
+    MFCC-stat + KNN & 26 维统计特征 & 80.0\% \\
+    MFCC + $\Delta$ + $\Delta^2$ + GMM & 39 维帧级序列特征 & 100.0\% \\
+    TinyKeywordCNN & $39 \times T$ MFCC 动态特征图 & 100.0\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+从结果可以看出，GMM 与 TinyKeywordCNN 在纯净语音条件下均达到 100.0\% 的验证准确率，20 条验证样本全部识别正确。
+其中，GMM 说明在小样本条件下，用概率生成模型直接建模变长帧序列是有效的；CNN 则说明经过数据增强后，卷积网络能够从 MFCC 动态特征图中学习到有效的局部时频判别模式。
+KNN 的准确率为 80.0\%，主要混淆包括 $0 \rightarrow 7$、$2 \rightarrow 8$、$4 \rightarrow 3$、$6 \rightarrow 9$，反映出均值/标准差统计池化会损失部分发音过程中的时间顺序信息。
+
+\subsection{噪声添加方法与评价指标}
+
+噪声鲁棒性测试中，保持训练好的模型参数不变，仅对验证集语音添加噪声后重新识别。
+混合噪声由高斯白噪声、1/f 粉红噪声和 50 Hz 工频干扰组成。
+其中，白噪声近似覆盖全频段，会整体抬高频谱噪声底；1/f 噪声能量更集中于低频区域，容易与语音中的低频共振峰重叠；50 Hz 工频干扰则对应实际采集系统中常见的窄带周期性干扰。
+
+设干净语音为 $x[n]$，归一化后的混合噪声为 $v[n]$。
+为了得到目标信噪比 $\mathrm{SNR}_{\mathrm{dB}}$，首先计算两者平均功率
+\begin{equation}
+  P_x=\frac{1}{N}\sum_{n=0}^{N-1}x^2[n],\qquad
+  P_v=\frac{1}{N}\sum_{n=0}^{N-1}v^2[n].
+\end{equation}
+随后令噪声缩放系数为
+\begin{equation}
+  \alpha=\sqrt{\frac{P_x}{P_v\cdot 10^{\mathrm{SNR}_{\mathrm{dB}}/10}}},
+\end{equation}
+并构造带噪语音
+\begin{equation}
+  x_{\mathrm{noisy}}[n]=x[n]+\alpha v[n].
+\end{equation}
+
+KNN 与 GMM 在 $-10$ dB 至 20 dB 的 7 个 SNR 等级下测试，每个等级重复生成 20 次随机噪声，并统计识别准确率的均值和标准差。
+CNN 使用更细的 mixed noise SNR 网格进行测试，SNR 范围扩展至 30 dB，用于观察数据增强后模型在不同噪声强度下的变化趋势。
+由于 CNN 曲线不是 KNN/GMM 的同一套 20 次重复均值实验，因此下文主要比较趋势和最低可用 SNR，而不作严格统计显著性比较。
+
+\subsection{KNN 基线的噪声鲁棒性}
+
+图 \ref{fig:noise-knn} 给出了 KNN 基线在不同 SNR 下的识别准确率曲线。
+可以看到，KNN 在带噪条件下性能下降明显。
+当 SNR 较低时，准确率接近随机猜测水平；即使 SNR 提升到 20 dB，平均准确率也仅恢复到约 50\%，仍明显低于纯净语音下 80.0\% 的准确率。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.72\linewidth]{noise_knn_accuracy_snr.png}
+  \caption{KNN 基线在混合噪声下的准确率--SNR 曲线。曲线为 20 次重复实验的平均准确率，误差棒表示标准差。}
+  \label{fig:noise-knn}
+\end{figure}
+
+造成这一现象的主要原因在于，KNN 所使用的均值/标准差统计特征对噪声扰动较为敏感。
+噪声会改变各帧 MFCC 的整体分布，进而影响全局均值和标准差；同时，KNN 采用欧氏距离进行最近邻匹配，距离度量本身没有显式区分语音结构变化与噪声扰动。
+因此，在带噪条件下，原本相近的同类样本可能被拉远，不同类样本也可能因噪声而意外接近，导致分类边界不稳定。
+
+从最低可用 SNR 的角度看，在本实验设置的 $-10$ dB 至 20 dB 范围内，KNN 没有达到 90\% 以上准确率，说明其只能作为纯净或弱干扰条件下的简单基线，不适合作为主要鲁棒识别方案。
+
+\subsection{GMM 序列模型的噪声鲁棒性}
+
+图 \ref{fig:noise-gmm} 给出了 GMM 模型在混合噪声下的准确率--SNR 曲线，表 \ref{tab:noise-gmm} 给出了对应的 20 次重复均值与标准差。
+与 KNN 相比，GMM 的性能随 SNR 提升呈现更加稳定的上升趋势。
+在低 SNR 条件下，噪声仍会显著破坏 MFCC 特征，使模型难以可靠区分数字类别；但当 SNR 提升到中高区间后，GMM 的准确率提升明显，并在 20 dB 时达到 91.25\%。
+
+\begin{table}[H]
+  \centering
+  \caption{GMM 在不同 SNR 下的噪声鲁棒性结果（20 次重复）}
+  \label{tab:noise-gmm}
+  \begin{tabular}{ccc}
     \toprule
     SNR (dB) & 平均准确率 & 标准差 \\
     \midrule
@@ -55,25 +99,57 @@ Advanced GMM 的识别性能有显著提升，
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.75\linewidth]{snr_gmm_mean_std.png}
-  \caption{Advanced GMM 在不同 SNR 下的准确率变化曲线（误差线：$\pm 1\sigma$）}
-  \label{fig:snr_gmm}
+  \includegraphics[width=0.72\linewidth]{noise_gmm_accuracy_snr.png}
+  \caption{GMM 序列模型在混合噪声下的准确率--SNR 曲线。每个 SNR 重复 20 次，曲线展示平均准确率，误差棒表示标准差。}
+  \label{fig:noise-gmm}
 \end{figure}
 
-表~\ref{tab:snr_gmm} 和图~\ref{fig:snr_gmm} 共同展示了噪声鲁棒性测试结果。
-可以看出：
-\begin{enumerate}[label=(\arabic*)]
-  \item 随 SNR 从 \qty{-10}{dB} 上升至 \qty{20}{dB}，
-        平均准确率从 0.1000 单调上升至 0.9125，呈现清晰的 SNR-性能正相关趋势；
-  \item 在 \qty{20}{dB} 高 SNR 条件下，平均准确率达到 0.9125，
-        已接近纯净条件下的 1.0000，说明该方法对低强度噪声具有一定容忍度；
-  \item 在 \qty{0}{dB} 及以上 SNR 条件下，准确率恢复至 0.38 以上且稳定提升，
-        而在 \qty{-5}{dB} 和 \qty{-10}{dB} 极端低 SNR 下准确率接近随机水平（0.10）；
-  \item 标准差随 SNR 提升整体呈下降趋势，表明高 SNR 下结果更加稳定。
-\end{enumerate}
+GMM 相比 KNN 更鲁棒，主要有三方面原因。
+第一，GMM 直接利用帧级序列特征，而不是将整段语音压缩为单一统计向量，因此保留了更多时间局部结构。
+第二，MFCC + $\Delta$ + $\Delta^2$ 同时刻画频谱包络及其动态变化，使模型能够利用语音随时间演化的模式进行判别。
+第三，CMVN 能够减小整体能量、信道和录音条件差异对倒谱特征的影响，从而在一定程度上削弱噪声造成的全局偏移。
 
-% --- End of GMM results subsection ---
+根据实验结果，若以 90\% 准确率作为较高识别率标准，GMM 在测试范围内能够达到该标准的最低 SNR 为 20 dB。
+这表明 GMM 是本实验传统方法中综合表现最稳定的方案，但在强噪声环境下仍存在明显性能下降。
 
-\subsection{CNN 方法结果}
+\subsection{TinyKeywordCNN 的噪声鲁棒性}
 
-% TODO: CNN results part
+图 \ref{fig:noise-cnn} 展示了 TinyKeywordCNN 在 mixed noise 条件下的准确率--SNR 曲线，表 \ref{tab:noise-cnn} 给出了对应的细粒度 SNR 测试结果。
+与前一版结果相比，最终 CNN 训练配置加入了更强的噪声增强，并在纯净验证集上达到 100.0\%。
+在带噪条件下，CNN 准确率随 SNR 提升整体上升：$-10$ dB 时准确率为 20\%，0 dB 时提升到 60\%，10 dB 时达到 85\%，并在 12.5 dB 首次达到 90\%；25 dB 时达到 100\%。
+
+\begin{table}[H]
+  \centering
+  \caption{TinyKeywordCNN 在 mixed 噪声下不同 SNR 的识别准确率}
+  \label{tab:noise-cnn}
+  \small
+  \begin{tabular}{ccccccccc}
+    \toprule
+    SNR/dB & $-10$ & $-7.5$ & $-5$ & $-2.5$ & $0$ & $2.5$ & $5$ & $7.5$ \\
+    \midrule
+    准确率/\% & 20 & 30 & 40 & 40 & 60 & 65 & 70 & 80 \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.25cm}
+
+  \begin{tabular}{ccccccccc}
+    \toprule
+    SNR/dB & $10$ & $12.5$ & $15$ & $17.5$ & $20$ & $22.5$ & $25$ & $30$ \\
+    \midrule
+    准确率/\% & 85 & 90 & 90 & 95 & 90 & 95 & 100 & 95 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.72\linewidth]{noise_cnn_accuracy_snr.png}
+  \caption{TinyKeywordCNN 在 mixed 噪声下的准确率--SNR 曲线。该曲线采用更细 SNR 网格，主要用于观察准确率随 SNR 变化的趋势。}
+  \label{fig:noise-cnn}
+\end{figure}
+
+CNN 的优势在于能够通过卷积核学习 MFCC 特征图中的局部时频结构，而不是依赖人工定义的全局统计量或单帧概率密度。
+同时，训练阶段加入了白噪声、粉红噪声和 50 Hz 工频干扰增强，使模型提前见到与鲁棒性测试相近的扰动形式，因此在中高 SNR 区间表现较好。
+不过，由于本实验训练集仅有 50 条语音，验证集也仅有 20 条语音，CNN 的细粒度 SNR 曲线仍可能受到单次噪声抽样和小样本验证集的影响。
+因此，本报告将 CNN 曲线主要作为深度学习路线的趋势参考，不将其与 KNN/GMM 的 20 次重复均值曲线作严格统计显著性比较。

@@ -1,113 +1,147 @@
-\section{分类方法}
+\section{识别方法}
 
-\subsection{MFCC 统计特征 + KNN（Baseline）}
+在完成语音信号分析和 MFCC 特征提取之后，需要设计分类模型将特征向量映射为数字标签 0--9。
+本实验采用三种不同类型的分类方法：基于统计特征聚合的 K 近邻（KNN）基线方法、基于帧级序列概率建模的高斯混合模型（GMM），以及基于卷积神经网络（CNN）的深度学习方法。
+三种方法在输入特征形式、建模策略和模型复杂度上各有不同，构成了从简单到复杂的对比实验。
 
-% TODO: baseline KNN method part
+\subsection{MFCC 统计特征与 KNN 基线}
 
-\subsection{MFCC 动态序列特征 + GMM}
-
-针对 baseline 方法中``均值/方差''统计压缩丢失时序信息的问题，
-本方法保留了语音的帧级时序结构，将每段语音建模为变长特征序列
-$\{\mathbf{x}_1, \mathbf{x}_2, \ldots, \mathbf{x}_T\}$，其中
-$\mathbf{x}_t \in \mathbb{R}^{39}$，$T$ 为帧数。
-在此基础上，采用高斯混合模型（Gaussian Mixture Model, GMM）
-作为分类器，从概率密度建模的角度直接处理变长序列。
-
-\subsubsection{39 维动态特征提取}
-
-仅使用 13 维静态 MFCC 只能描述当前帧的瞬时频谱包络，无法刻画语音信号的动态变化趋势。
-为此，在静态 MFCC 的基础上引入一阶差分（$\Delta$）和二阶差分（$\Delta^2$）系数。
-
-一阶差分 $\Delta$ 通过线性回归计算第 $t$ 帧附近 $N$ 帧窗口内的斜率，近似该帧处特征的一阶时间导数：
-
+KNN 是一种简单直观的非参数分类方法，适合作为小样本语音识别任务的基线。
+为使变长帧序列能够输入基于固定长度向量的 KNN 分类器，本实验对每段语音的 13 维 MFCC 帧级特征沿时间轴分别计算均值和标准差，拼接为 26 维固定长度特征向量：
 \begin{equation}
-  \Delta_t = \frac{\sum_{i=1}^{N} i \cdot (\mathbf{c}_{t+i} - \mathbf{c}_{t-i})}{2 \sum_{i=1}^{N} i^2}
+  \mathbf{f} = [\,\boldsymbol{\mu},\; \boldsymbol{\sigma}\,],\quad
+  \boldsymbol{\mu} = \frac{1}{T}\sum_{t=1}^{T} \mathbf{c}_t,\quad
+  \boldsymbol{\sigma} = \sqrt{\frac{1}{T}\sum_{t=1}^{T} (\mathbf{c}_t - \boldsymbol{\mu})^2},
+\end{equation}
+其中 $\mathbf{c}_t \in \mathbb{R}^{13}$ 为第 $t$ 帧的 MFCC 向量，$T$ 为该语音段的总帧数。
+
+在分类之前，使用 StandardScaler 对特征进行标准化，使各维特征具有零均值和单位方差。
+分类器采用 $k=1$ 的最近邻分类器，距离度量为欧氏距离。由于训练集中每个类别包含多个说话人的样本，1-NN 实际上是在全部训练样本中寻找最近邻：
+\begin{equation}
+  i^* = \arg\min_i \|\mathbf{f} - \mathbf{f}_i^{\text{train}}\|_2,\qquad
+  \hat{y}=y_i^{\text{train}}\big|_{i=i^*}.
 \end{equation}
 
-其中 $\mathbf{c}_t$ 为第 $t$ 帧的 13 维 MFCC 向量，$N = 2$ 为上下文窗口宽度。
-该公式对窗口内每条差分给予与距离成正比的权重，距离越远的帧对斜率估计贡献越大。
+该方法的优点在于简单、可解释，且无需训练过程，非常适合小样本场景。
+然而，均值与标准差的统计池化操作丢弃了帧之间的时序顺序信息——两段发音顺序完全不同的语音可能具有相近的统计量，从而导致误判。
+此外，尝试将 39 维动态特征（MFCC + $\Delta$ + $\Delta^2$）也以同样方式池化后输入 KNN 时，验证准确率反而下降，推测原因是高维特征下统计池化加剧了信息损失，欧氏距离的判别能力也随之减弱。
 
-二阶差分 $\Delta^2$ 将一阶差分 $\Delta$ 再次通过同一回归公式计算得到，
-近似二阶时间导数，反映频谱变化的``加速度''。最终将三者沿特征维度拼接：
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.60\linewidth]{confusion_knn_clean.png}
+  \caption{KNN 纯净语音混淆矩阵（准确率 80.0\%，16/20）。主要混淆为 $0 \rightarrow 7$、$2 \rightarrow 8$、$4 \rightarrow 3$、$6 \rightarrow 9$，表明统计特征的判别力不足以区分部分发音相近的数字对。}
+  \label{fig:conf-knn}
+\end{figure}
 
+\subsection{MFCC 序列特征与 GMM 模型}
+
+GMM 通过对每一类数字的概率密度进行参数化建模，能够直接处理变长帧序列，避免了将语音``压缩''为固定统计量的过程。
+本实验为每个数字类别 $c \in \{0,\dots,9\}$ 分别训练一个 GMM，模型参数为 $\lambda_c = \{\pi_k, \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k\}_{k=1}^{K}$。
+
+输入特征为 39 维帧级特征 $\mathbf{x}_t \in \mathbb{R}^{39}$（13 维 MFCC + 13 维 $\Delta$ + 13 维 $\Delta^2$）。
+在训练前，对特征进行倒谱均值方差归一化（Cepstral Mean and Variance Normalization, CMVN），以减小信道差异和录音环境的影响。
+每个 GMM 包含 $K = 4$ 个高斯分量，协方差矩阵约束为对角形式，以在参数量和建模能力之间取得平衡。
+模型参数通过期望最大化（EM）算法从训练样本中估计。
+
+对于一段包含 $T$ 帧的语音 $\mathbf{X} = \{\mathbf{x}_1, \dots, \mathbf{x}_T\}$，其属于类别 $c$ 的对数似然为
 \begin{equation}
-  \mathbf{x}_t = \bigl[\,\mathrm{MFCC}_t \;\big|\; \Delta_t \;\big|\; \Delta^2_t \,\bigr] \in \mathbb{R}^{39}
+  \log p(\mathbf{X} \mid \lambda_c) = \sum_{t=1}^{T} \log \sum_{k=1}^{K} \pi_k \,\mathcal{N}(\mathbf{x}_t \mid \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k).
+\end{equation}
+最终判决为对数似然最大的类别：
+\begin{equation}
+  \hat{y} = \arg\max_{c} \log p(\mathbf{X} \mid \lambda_c).
 \end{equation}
 
-其中 MFCC$_t$ 为 13 维静态系数，$\Delta_t$ 为 13 维一阶差分，$\Delta^2_t$ 为 13 维二阶差分。
-39 维特征同时编码了当前帧的频谱形状、变化速度和变化加速度，
-为后续 GMM 提供了更丰富的声学判别信息。
+GMM 方法的主要优势在于：保留完整的帧序列信息，不进行统计池化，能够更充分地利用 MFCC 动态特征所反映的帧级分布与局部变化；
+对角协方差假设在参数量可控的前提下，仍能有效建模各类数字在特征空间中的分布。
+在小样本条件下，GMM 的表现尤为突出。
 
-\subsubsection{倒谱均值方差归一化（CMVN）}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.60\linewidth]{confusion_gmm_clean.png}
+  \caption{GMM 纯净语音混淆矩阵（准确率 100.0\%，20/20）。20 条验证样本全部识别正确，表明 GMM 结合 39 维动态特征在小样本场景下具有优异的分类性能。}
+  \label{fig:conf-gmm}
+\end{figure}
 
-不同说话人或不同录音条件下的信道差异会使 MFCC 分布发生整体偏移和尺度变化。
-为降低此类变异对分类的影响，在提取 39 维特征后，
-对每句语音逐维度进行基于句子的均值方差归一化（Cepstral Mean and Variance Normalization, CMVN）：
+\subsection{MFCC 动态特征图与 TinyKeywordCNN}
 
-\begin{equation}
-  \hat{\mathbf{x}}_t^{(d)} = \frac{\mathbf{x}_t^{(d)} - \mu^{(d)}}{\sigma^{(d)} + \varepsilon},\quad
-  \mu^{(d)} = \frac{1}{T}\sum_{t=1}^{T} \mathbf{x}_t^{(d)},\quad
-  \sigma^{(d)} = \sqrt{\frac{1}{T}\sum_{t=1}^{T} (\mathbf{x}_t^{(d)} - \mu^{(d)})^2}
-\end{equation}
+为进一步探索深度学习方法在小样本语音识别任务中的潜力，本实验采用了一个轻量级卷积神经网络 TinyKeywordCNN。
+与 KNN 和 GMM 不同，CNN 将 39 维 MFCC 帧级特征排列为 $39 \times T$ 的二维特征图（类似于单通道图像），通过卷积操作自动学习局部时频模式。
 
-其中 $d = 1, \ldots, 39$ 为特征维索引，$\varepsilon = 10^{-8}$ 防止除零。
-CMVN 使每维特征在句内均值为零、方差为一，有助于消除信道卷积噪声的线性滤波效应，
-并减小不同说话人之间的特征分布差异。
-
-\subsubsection{GMM 分类器}
-
-高斯混合模型将数据分布建模为 $K$ 个高斯分量的加权和。
-对于数字类别 $c \in \{0, 1, \ldots, 9\}$，独立训练一个 GMM，
-其概率密度函数为：
-
-\begin{equation}
-  p(\mathbf{x} \mid \lambda_c) = \sum_{k=1}^{K} w_{c,k} \,
-  \mathcal{N}\bigl(\mathbf{x} \mid \bm{\mu}_{c,k}, \bm{\Sigma}_{c,k}\bigr)
-\end{equation}
-
-其中 $w_{c,k}$ 为第 $k$ 个分量的混合权重（$\sum_k w_{c,k} = 1$），
-$\bm{\mu}_{c,k}$ 为均值向量，$\bm{\Sigma}_{c,k}$ 为协方差矩阵。
-本实验设定 $K = 4$ 个高斯分量，协方差类型为对角阵（\texttt{diag}），
-兼顾模型容量与参数估计稳定性。
-
-训练阶段，对每个数字类别 $c$，将该类所有训练样本的全部帧拼接为训练集
-$X_c = \{\mathbf{x}^{(1)}, \mathbf{x}^{(2)}, \ldots, \mathbf{x}^{(M_c)}\}$，
-通过期望最大化（EM）算法迭代估计 GMM 参数 $\lambda_c = \{w_{c,k}, \bm{\mu}_{c,k}, \bm{\Sigma}_{c,k}\}_{k=1}^{K}$。
-
-预测阶段，对于测试样本的特征序列 $X = \{\mathbf{x}_1, \ldots, \mathbf{x}_T\}$，
-假设各帧独立同分布，计算该序列在每个类 GMM 下的平均对数似然：
-
-\begin{equation}
-  \log p(X \mid \lambda_c) = \frac{1}{T} \sum_{t=1}^{T}
-  \log \sum_{k=1}^{K} w_{c,k} \, \mathcal{N}(\mathbf{x}_t \mid \bm{\mu}_{c,k}, \bm{\Sigma}_{c,k})
-\end{equation}
-
-取对数似然最大的类别作为预测结果：
-$\hat{y} = \arg\max_c \log p(X \mid \lambda_c)$。
-与 KNN 仅比较样本间距离不同，GMM 从概率生成模型的角度
-显式建模每类语音的帧级特征分布，能够更充分地利用时序特征的统计信息。
-
-\subsubsection{与 Baseline 方法的对比}
-
-表~\ref{tab:method_comparison} 总结了 Advanced GMM 方法与 baseline KNN 方法的主要区别。
+TinyKeywordCNN 的总体可训练参数量为 102,522，结构如表 \ref{tab:cnn-arch} 所示。
+表中卷积块参数量包含卷积核权重和 BatchNorm2d 的可训练缩放、平移参数。
+网络包含 4 个卷积块，通道数从 1 逐步扩展至 128，每个卷积块由 Conv2d（$3\times3$ 卷积核）、BatchNorm2d 和 ReLU 激活函数组成。
+前三块后各接一个 $2\times2$ 最大池化层以逐步降低特征图尺寸；第四块后使用自适应平均池化将特征图统一压缩至 $2\times2$，随后经 Flatten 展开为 512 维向量，再通过 Dropout（$p=0.3$）和全连接层输出 10 类对数概率。
 
 \begin{table}[H]
   \centering
-  \caption{Baseline KNN 与 Advanced GMM 方法对比}
-  \label{tab:method_comparison}
-  \begin{tabular}{@{}p{3.2cm} p{5.5cm} p{5.5cm}@{}}
+  \caption{TinyKeywordCNN 网络结构}
+  \label{tab:cnn-arch}
+  \small
+  \begin{tabular}{lcc}
     \toprule
-    维度 & Baseline KNN & Advanced GMM \\
+    层 & 输出尺寸 & 参数量 \\
     \midrule
-    特征维度 & 13 维 MFCC & 39 维（MFCC + $\Delta$ + $\Delta^2$） \\
-    \addlinespace
-    时序处理 & 均值/方差压缩为 26 维定长向量，丢弃时序 & 保留全部帧序列 $(T, 39)$ \\
-    \addlinespace
-    归一化 & StandardScaler（全局） & CMVN（逐句均值方差归一化） \\
-    \addlinespace
-    分类器 & 1-NN（基于欧氏距离） & GMM（$K=4$，对角协方差，对数似然评分） \\
-    \addlinespace
-    决策依据 & 最近邻样本标签 & 各类别概率密度建模 \\
+    ConvBlock (1 $\to$ 16) + MaxPool   & $16 \times 19 \times T/2$    & 176 \\
+    ConvBlock (16 $\to$ 32) + MaxPool  & $32 \times 9 \times T/4$    & 4,672 \\
+    ConvBlock (32 $\to$ 64) + MaxPool  & $64 \times 4 \times T/8$    & 18,560 \\
+    ConvBlock (64 $\to$ 128)           & $128 \times 4 \times T/8$   & 73,984 \\
+    AdaptiveAvgPool2d + Flatten        & 512                         & 0 \\
+    Dropout + Linear(512, 10)          & 10                          & 5,130 \\
+    \midrule
+    总计                              &                             & 102,522 \\
     \bottomrule
   \end{tabular}
 \end{table}
+
+训练采用 AdamW 优化器，学习率为 0.001，权重衰减为 0.0001，batch size 为 16，最大训练轮次为 500。
+为缓解小样本带来的过拟合风险，训练中加入了数据增强策略：以 0.45 的概率向训练样本添加随机噪声（白噪声、粉红噪声或 50 Hz 工频干扰）、随机增益扰动（$\pm 2$ dB）和随机时间平移（$\pm 80$ ms）。
+采用早停机制，patience 设置为 160 个轮次（来源：\texttt{train\_summary.json} 中的实际训练配置），最佳验证准确率出现在第 54 轮，最终纯净验证集准确率为 100.0\%。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.60\linewidth]{confusion_cnn_clean.png}
+  \caption{CNN 纯净语音混淆矩阵（准确率 100.0\%，20/20）。20 条验证样本全部识别正确，说明数据增强后的 TinyKeywordCNN 能够在纯净验证集上学习到有效的局部时频判别模式。}
+  \label{fig:conf-cnn}
+\end{figure}
+
+CNN 方法的主要优势在于能够通过卷积核自动学习 MFCC 特征图中的局部时频模式，不需要人工定义统计量或概率分布假设。
+同时，训练阶段引入与鲁棒性测试一致的白噪声、粉红噪声和工频干扰增强，使模型在带噪输入下也具有更好的适应性。
+不过，深度学习模型的统计可靠性仍受训练集规模限制；在本实验仅 50 条训练样本的条件下，CNN 结果应结合噪声测试趋势和小样本局限共同分析。
+
+\subsection{三种方法的对比}
+
+表 \ref{tab:method-compare} 从输入特征、建模方式和主要特点三个维度对三种方法进行了总结。
+
+\begin{table}[H]
+  \centering
+  \caption{三种识别方法的对比}
+  \label{tab:method-compare}
+  \small
+  \begin{tabular}{lccc}
+    \toprule
+    方法 & 输入特征 & 建模方式 & 主要特点 \\
+    \midrule
+    KNN & 26 维统计特征 & 1-NN，欧氏距离 &
+    简单可解释，无需训练；\\
+    &（13 维 MFCC 均值+标准差） & & 但统计池化丢失时序信息 \\
+    \midrule
+    GMM & 39 维帧级序列特征 &
+    4 分量对角协方差 GMM， &
+    保留变长帧序列，适合小样本；\\
+    &（MFCC + $\Delta$ + $\Delta^2$） & 最大对数似然判决 &
+    概率建模稳定，适合帧级分布建模 \\
+    \midrule
+    CNN & $39 \times T$ 特征图 &
+    4 层卷积网络，102k 参数，&
+    自动学习局部时频模式；\\
+    &（MFCC + $\Delta$ + $\Delta^2$） & 数据增强 + 早停 &
+    表示能力强，噪声增强后鲁棒性更好 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+三种方法从不同角度解决了``如何利用 MFCC 特征进行数字分类''这一问题：KNN 最为简单，以统计聚合换取固定维度输入；
+GMM 在保留序列信息和控制模型复杂度之间取得良好平衡，尤其适合本实验的小样本场景；
+CNN 具有最强的表示学习能力，并且通过噪声增强提升了带噪环境下的适应性，但其结果仍需结合小样本数据集的统计局限进行理解。
+三者在纯净语音条件下的准确率比较和噪声鲁棒性分析将在下一章详细讨论。
